@@ -85,7 +85,7 @@ A sixth test checks the generator reaches every decision at least 20 times, so t
 
 **How do I use this on my own repo?** Write your protected paths and two or three checklist items from real incidents, have CI and your verify hook write evidence as JSON Lines (`EvidenceReport.parse(jsonLines:)`), and run the gate in `.observe` for a couple of weeks before `.enforce`. Load the policy from the base branch in CI, never from the pull request.
 
-**Isn't this CODEOWNERS plus required checks?** Those are parts of it. CODEOWNERS routes test edits to a reviewer, and required checks are fixed per branch. Neither knows which evidence a diff needs, whether a pass was for the head commit, or whether it followed a failure. The gate joins those up per change.
+**Isn't this CODEOWNERS plus required checks?** Those are parts of it. Branch protection ties status checks to the head commit and CODEOWNERS routes test edits to a reviewer, but required checks are set per branch, not per diff, and a re-run that turns a check green replaces the red result. The gate decides per change which evidence is needed and keeps the failure.
 
 **What if a feature legitimately needs new or updated tests?** It still works: the change goes to the check owner instead of merging on its own evidence. The finding names the test files to read.
 
