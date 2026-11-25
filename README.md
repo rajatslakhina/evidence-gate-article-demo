@@ -47,7 +47,7 @@ let prompt = PromptRenderer.instructions(policy: policy,
 
 ## Wiring it into CI
 
-Gate only agent-authored PRs (identify them by bot account or label); human PRs keep your usual review. Post the verdict's findings as the check's output so the agent's next round reads them. Build every input in CI, never from the agent's own report. The gate trusts every field of `ChangeSet`: if the agent supplied the file list, it could leave the test file out.
+Gate agent-authored PRs, identified by a bot account rather than a label the agent could remove; if agents push under people's accounts, gate every PR. Human PRs otherwise keep your usual review. Post the verdict's findings as the check's output so the agent's next round reads them. Build every input in CI, never from the agent's own report. The gate trusts every field of `ChangeSet`: if the agent supplied the file list, it could leave the test file out.
 
 Run the gate job itself from the base branch (a required workflow or ruleset, or `pull_request_target` that checks out the base branch for the gate and never builds or runs the PR's code, since SwiftPM manifests are code; it downloads the evidence file the head commit's test run produced) and make its verdict a required check. A normal `pull_request` workflow runs the PR's own copy, so a change that edits CI could rewrite the gate that judges it. Map `needsHuman` to a failing required check that only a person's approval clears. The gate has no approval input, so your base-branch job (for example `pull_request_target`, or a ruleset-required workflow) has to look up, through the API, an approving review whose `commit_id` is the head SHA from the CODEOWNERS of the flagged paths (or turn on "Dismiss stale pull request approvals"), and only then report success. Don't clear a round-limit escalation that still has a failing run: the lead takes the change over instead. Re-run that job after the review is submitted (for example, a re-run from a base-branch workflow), since a `pull_request_target` job doesn't re-run on its own when someone approves. A pass skips review only if your branch rules don't also require an approval for those paths. Don't do this from a `pull_request_review` workflow: it runs the PR's own copy of the workflow. Turn on "Require review from Code Owners", give every sensitive path a CODEOWNERS entry, and route round-limit escalations on product code to a named lead, since those have no test owner.
 
@@ -132,7 +132,8 @@ A further test checks the generator reaches pass, block and needs-a-person at le
 - The policy's origin isn't checked, and nor is the gate job's: load the policy and run the gate from the base branch as a required check.
 - The protected and sensitive lists are the sample's; check them against where your tests, CI config and secrets actually live (local actions in `.github/actions/`, Makefiles, other CI systems).
 - Paths only: triggers are path globs, not code patterns. A schema change outside `Sources/Persistence/` won't trigger REL-01, and product code that detects it's under test (launch arguments, `#if DEBUG`) can pass real tests.
-- It doesn't judge test quality. A weak end-to-end test still passes, which is why checks have owners.
+- It doesn't judge test quality or coverage: the baseline accepts any green unit run on the head commit, even one unrelated to the change.
+- A weak end-to-end test still passes, which is why checks have owners.
 - A pass isn't a security review: keep anything security-sensitive in `sensitivePaths`.
 - `**` matching backtracks; fine for a handful of patterns, not thousands.
 - The week, paths and incidents behind the checklist items are constructed for illustration.
