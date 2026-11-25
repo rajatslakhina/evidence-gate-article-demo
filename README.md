@@ -2,7 +2,7 @@
 
 A small Swift library that judges a coding agent's change by the **evidence recorded for its head commit**, not by what the agent says about it. It's the demo for the article *More Reviewers Won't Fix the Coding Agent Review Bottleneck. Verification the Agent Can't Edit Might.*
 
-Article: (added after publish)
+Article: [More Reviewers Won't Fix the Coding Agent Review Bottleneck. Verification the Agent Can't Edit Might.](https://medium.com/@er.rajatlakhina/more-reviewers-wont-fix-the-coding-agent-review-bottleneck-a9e64f56e52a)
 
 ![The demo app on the iOS Simulator: a constructed week of 8 agent changes, 2 pass, 3 go back to the agent, 3 need a person](Demo/Screenshots/week-cropped.png)
 
@@ -151,7 +151,7 @@ A further test checks the generator reaches pass, block and needs-a-person at le
 
 ## Verification status
 
-For the version in this repo: clean `swift build -Xswiftc -warnings-as-errors` and `swift test` (50 tests in 7 suites passed) on macOS with Xcode 27.2 / Swift 6.4.2. The demo app was built with `xcodebuild`, installed and launched on a fresh iPhone 17 Pro Simulator (iOS 27.2) for each tab, and confirmed still running; `week.png`, `observe.png` and `prompt.png` in `Demo/Screenshots/` come from that run, and `week-cropped.png` is `week.png` cropped above the tab bar. CI: (added after the first run)
+For the version in this repo: clean `swift build -Xswiftc -warnings-as-errors` and `swift test` (50 tests in 7 suites passed) on macOS with Xcode 27.2 / Swift 6.4.2. The demo app was built with `xcodebuild`, installed and launched on a fresh iPhone 17 Pro Simulator (iOS 27.2) for each tab, and confirmed still running; `week.png`, `observe.png` and `prompt.png` in `Demo/Screenshots/` come from that run, and `week-cropped.png` is `week.png` cropped above the tab bar. CI: [run 45597084420](https://github.com/rajatslakhina/evidence-gate-article-demo/actions/runs/45597084420) passed both jobs on macos-15 (Xcode 26.3): `swift test` ran 50 tests in 7 suites, and the demo app was built, launched and screenshotted on an iOS Simulator.
 
 ## Sources
 
