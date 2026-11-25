@@ -49,17 +49,17 @@ let prompt = PromptRenderer.instructions(policy: policy,
 
 Build every input in CI, never from the agent's own report. The gate trusts every field of `ChangeSet`: if the agent supplied the file list, it could leave the test file out.
 
-Run the gate job itself from the base branch (a required workflow or ruleset, or `pull_request_target` that checks out the base branch for the gate) and make its verdict a required check. A normal `pull_request` workflow runs the PR's own copy, so a change that edits CI could rewrite the gate that judges it. Map `needsHuman` to a failing required check that only a person's approval clears. The gate has no approval input, so your base-branch job (for example `pull_request_target`, or a ruleset-required workflow) has to look up an approving review from the CODEOWNERS of the flagged paths through the API, and only then report success. Don't clear a round-limit escalation that still has a failing run: the lead takes the change over instead. Re-run that job after the review is submitted (for example, a re-run from a base-branch workflow), since a `pull_request_target` job doesn't re-run on its own when someone approves. A pass skips review only if your branch rules don't also require an approval for those paths. Don't do this from a `pull_request_review` workflow: it runs the PR's own copy of the workflow. Turn on "Require review from Code Owners", give every sensitive path a CODEOWNERS entry, and route round-limit escalations on product code to a named lead, since those have no test owner.
+Run the gate job itself from the base branch (a required workflow or ruleset, or `pull_request_target` that checks out the base branch for the gate) and make its verdict a required check. A normal `pull_request` workflow runs the PR's own copy, so a change that edits CI could rewrite the gate that judges it. Map `needsHuman` to a failing required check that only a person's approval clears. The gate has no approval input, so your base-branch job (for example `pull_request_target`, or a ruleset-required workflow) has to look up, through the API, an approving review whose `commit_id` is the head SHA from the CODEOWNERS of the flagged paths (or turn on "Dismiss stale pull request approvals"), and only then report success. Don't clear a round-limit escalation that still has a failing run: the lead takes the change over instead. Re-run that job after the review is submitted (for example, a re-run from a base-branch workflow), since a `pull_request_target` job doesn't re-run on its own when someone approves. A pass skips review only if your branch rules don't also require an approval for those paths. Don't do this from a `pull_request_review` workflow: it runs the PR's own copy of the workflow. Turn on "Require review from Code Owners", give every sensitive path a CODEOWNERS entry, and route round-limit escalations on product code to a named lead, since those have no test owner.
 
 ```swift
 // git -c core.quotePath=false diff --name-status -M origin/main...HEAD
 let change = ChangeSet.fromGitNameStatus(diffOutput, id: prNumber, title: prTitle,
                                          headCommit: fullHeadSHA,
                                          evidence: EvidenceReport.parse(jsonLines: evidenceFile).evidence,
-                                         fixRounds: roundsCountedByCI)
+                                         fixRounds: roundsCountedByCI)   // the gate's earlier blocking runs on this PR
 ```
 
-Each evidence record is one JSON line, written by your CI job or verify hook after the check runs:
+Read `deletionReasons` from somewhere the agent writes in the open, such as the PR description, keyed by path. Each evidence record is one JSON line, written by your CI job or verify hook after the check runs:
 
 ```json
 {"kind":"property","name":"order-round-trip","commit":"<full head SHA>","passed":true,"cases":2000,"producer":"ci"}
