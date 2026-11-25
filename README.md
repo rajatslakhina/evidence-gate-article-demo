@@ -50,6 +50,7 @@ let prompt = PromptRenderer.instructions(policy: policy,
 There's no CLI or GitHub Action yet. Add the library with SwiftPM to a small executable kept in `.gate/` (protected, so an agent change can't weaken it for later PRs), built from the base branch with your `GatePolicy` compiled in as Swift, that reads the git diff and the evidence file and exits non-zero unless `verdict.enforced == .pass`. The package identity comes from the repo URL, so use that name for `package:`:
 
 ```swift
+// the executable's Package.swift needs: platforms: [.macOS(.v14)]
 .package(url: "https://github.com/rajatslakhina/evidence-gate-article-demo.git", from: "1.0.0"),
 // in the executable target's dependencies:
 .product(name: "EvidenceGate", package: "evidence-gate-article-demo"),
@@ -138,7 +139,7 @@ A further test checks the generator reaches pass, block and needs-a-person at le
 ## Limits
 
 - Inputs are trusted: build `ChangeSet` and evidence in CI, not from anything the agent reports.
-- No provenance: evidence records aren't signed or attested. In CI the code under test runs in the same job, so write evidence in a separate job after the tests (a later step in the same job shares the runner, and test code can write `$GITHUB_ENV` or `$GITHUB_PATH`), from the test results: for example the `.xcresult` bundle, read with `xcrun xcresulttool`, which is harder (not impossible) for test code to tamper with than a file the tests write directly. The bundle has pass/fail per test but no evidence kind or property-case count, so map test names to kinds in that step and have property tests log their case count.
+- No provenance: evidence records aren't signed or attested. In CI the code under test runs in the same job, so write evidence in a separate job after the tests (a later step in the same job shares the runner, and test code can write `$GITHUB_ENV` or `$GITHUB_PATH`), from the test results: for example the `.xcresult` bundle, read with `xcrun xcresulttool`, which is harder (not impossible) for test code to tamper with than a file the tests write directly. The bundle has pass/fail per test but no evidence kind or property-case count, so map test names to kinds in that job and have property tests log their case count.
 - The policy's origin isn't checked, and nor is the gate job's: load the policy and run the gate from the base branch as a required check.
 - The protected and sensitive lists are the sample's; check them against where your tests, CI config and secrets actually live (local actions in `.github/actions/`, Makefiles, other CI systems).
 - Paths only: triggers are path globs, not code patterns. A schema change outside `Sources/Persistence/` won't trigger REL-01, and product code that detects it's under test (launch arguments, `#if DEBUG`) can pass real tests.
