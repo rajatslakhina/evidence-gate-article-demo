@@ -1,5 +1,6 @@
-/// Renders the agent's instructions from the same policy the gate enforces,
-/// so the prompt and the check can't drift apart.
+/// Renders the agent's instructions from the same policy the gate enforces, so the
+/// protected paths, sensitive paths, evidence for the planned paths and round limit
+/// all come from one place. The rest of the text is fixed guidance.
 public enum PromptRenderer {
     public static func instructions(policy: GatePolicy, plannedPaths: [String]) -> String {
         let paths = plannedPaths.compactMap(RepoPath.normalize)
@@ -13,9 +14,13 @@ public enum PromptRenderer {
         lines.append("")
         lines.append("These paths judge your change or decide which checks run: "
                      + policy.protectedChecks.map(\.pattern).joined(separator: ", ") + ".")
-        lines.append("Don't modify or delete existing checks there. If a check looks wrong, stop and tell me "
+        lines.append("Don't modify or delete existing checks there as part of this change. If a check looks wrong, stop and tell me "
                      + "which one and why. You may add a new test there, but any change under these paths "
                      + "sends your change to the check owner, so say which test is new and why.")
+        if !policy.sensitivePaths.isEmpty {
+            lines.append("These paths always go to a person, however complete the evidence: "
+                         + policy.sensitivePaths.map(\.pattern).joined(separator: ", ") + ".")
+        }
         lines.append("")
         lines.append("Evidence this change needs, recorded by "
                      + policy.trustedProducers.map(\.rawValue).sorted().joined(separator: " or ")

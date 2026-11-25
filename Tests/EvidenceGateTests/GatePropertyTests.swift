@@ -16,6 +16,9 @@ struct SplitMix64: RandomNumberGenerator {
 
 private let productRoots = ["Sources/Checkout", "Sources/Persistence", "Sources/Networking",
                             "Sources/Settings", "Sources/Profile"]
+/// Product paths a person always reviews; mixed into generated changes so the
+/// "a pass never touches a sensitive path" property can actually fail.
+private let sensitiveFiles = ["Sources/Auth/Token.swift", "App/Info.plist", "App/App.entitlements"]
 private let checkRoots = ["Tests/AppTests", "UITests", "Sources/Checkout/__Snapshots__",
                           ".github/workflows", ".gate", "tests/AppTests", ".claude", "Scripts"]
 private let commits = ["aaa1111", "bbb2222", "ccc3333"]
@@ -43,7 +46,9 @@ private extension SplitMix64 {
     }
 
     mutating func file() -> ChangedFile {
-        let path = disguised(self.path(in: Bool.random(using: &self) ? productRoots : checkRoots))
+        let path = Int.random(in: 0..<10, using: &self) == 0
+            ? pick(sensitiveFiles)
+            : disguised(self.path(in: Bool.random(using: &self) ? productRoots : checkRoots))
         switch Int.random(in: 0..<6, using: &self) {
         case 0: return ChangedFile(path, .deleted)
         case 1: return ChangedFile(path, .renamed(from: self.path(in: Bool.random(using: &self) ? productRoots : checkRoots)))
@@ -73,7 +78,8 @@ private extension SplitMix64 {
         // A quarter of the time, build a change that's close to passing, so the
         // properties about passes see plenty of them.
         if Int.random(in: 0..<4, using: &self) == 0 {
-            let files = (0..<Int.random(in: 1...3, using: &self)).map { _ in ChangedFile(path(in: productRoots)) }
+            var files = (0..<Int.random(in: 1...3, using: &self)).map { _ in ChangedFile(path(in: productRoots)) }
+            if Int.random(in: 0..<8, using: &self) == 0 { files.append(ChangedFile(pick(sensitiveFiles))) }
             var evidence = [Evidence(kind: .unit, name: "AppTests", commit: head, passed: true)]
             for kind in [EvidenceKind.endToEnd, .simulatorRun, .differential] where Bool.random(using: &self) {
                 let name = kind == .endToEnd ? "checkout-flow" : kind == .differential ? "store-migration" : "iPhone 17 Pro"

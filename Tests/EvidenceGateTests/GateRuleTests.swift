@@ -183,6 +183,7 @@ struct EvidenceRuleTests {
     @Test("Files that decide which checks run are protected", arguments: [
         "Demo.xcodeproj/xcshareddata/xcschemes/Demo.xcscheme", "Demo.xcodeproj/project.pbxproj",
         "Package.swift", "Scripts/run-ui-tests.sh", ".claude/settings.json", ".claude/hooks/record-evidence.sh",
+        ".github/CODEOWNERS", "Config/Debug.xcconfig", "Packages/Core/Package.swift", "Packages/Core/Tests/CoreTests/A.swift",
     ])
     func checkControlFilesAreProtected(path: String) {
         let change = ChangeSet(id: "x", title: "", headCommit: head,
@@ -191,6 +192,15 @@ struct EvidenceRuleTests {
         let v = gate.evaluate(change)
         #expect(v.decision == .needsHuman)
         #expect(v.findings == [.modifiesOwnChecks([path])])
+    }
+
+    @Test func anUnexplainedDeletionAfterTheRoundLimitEscalates() {
+        let change = ChangeSet(id: "x", title: "", headCommit: head,
+                               files: [ChangedFile("Tests/ProfileTests/AvatarTests.swift", .deleted)], fixRounds: 3)
+        let v = gate.evaluate(change)
+        #expect(v.decision == .needsHuman)
+        #expect(v.findings == [.deletedCheckWithoutReason("Tests/ProfileTests/AvatarTests.swift"),
+                               .stillBlockedAfterRounds(3)])
     }
 
     @Test func deletionWithNoReasonEntryBlocks() {
@@ -234,7 +244,9 @@ struct PromptTests {
     @Test func promptIsRenderedFromThePolicy() {
         let prompt = PromptRenderer.instructions(policy: SampleWeek.policy(),
                                                  plannedPaths: ["Sources/Checkout/PlaceOrderButton.swift"])
-        #expect(prompt.contains("Tests/**, UITests/**, **/__Snapshots__/**, **/*.xctestplan, **/*.xcscheme, **/project.pbxproj, Package.swift, .github/workflows/**, Scripts/**, .claude/**, .gate/**"))
+        #expect(prompt.contains("**/Tests/**, **/UITests/**, **/__Snapshots__/**, **/*.xctestplan, **/*.xcscheme, **/project.pbxproj, **/*.xcconfig, **/Package.swift, **/CODEOWNERS, .github/workflows/**, Scripts/**, .claude/**, .gate/**"))
+        #expect(prompt.contains("These paths always go to a person, however complete the evidence: **/*.entitlements"))
+        #expect(prompt.contains("as part of this change"))
         #expect(prompt.contains("You may add a new test there"))
         #expect(prompt.contains("add the property test that would have caught it as a new test"))
         #expect(prompt.contains("- baseline: unit (any)"))
@@ -264,6 +276,18 @@ struct GitNameStatusTests {
             ChangedFile("Sources/F.swift", .added),
             ChangedFile("Scripts/g.sh", .modified),
         ])
+    }
+
+    @Test("Quoted or empty fields fail closed", arguments: [
+        "A\t\"Tests/caf\\303\\251.swift\"",
+        "A\t\".github/workflows/\\303\\251vil.yml\"",
+        "\tSources/A.swift",
+        "M\t",
+    ])
+    func quotedPathsFailClosed(line: String) {
+        let change = ChangeSet.fromGitNameStatus(line, id: "x", title: "", headCommit: head, evidence: [unit()])
+        #expect(change.files == [ChangedFile("/unparsed: " + line)])
+        #expect(gate.evaluate(change).decision == .block)
     }
 
     @Test func anUnreadableLineBecomesAnInvalidPathInsteadOfVanishing() {

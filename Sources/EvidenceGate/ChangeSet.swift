@@ -52,25 +52,32 @@ public struct ChangeSet: Sendable, Identifiable {
 }
 
 public extension ChangeSet {
-    /// Reads the output of `git diff --name-status -M <base>...<head>`.
+    /// Reads the output of `git -c core.quotePath=false diff --name-status -M <base>...<head>`.
     ///
     /// Handles `A`, `M`, `D`, `T` and `R<score>`/`C<score>` lines. A line it
-    /// can't read is kept as a modified file with the raw text as its path, so
-    /// the gate reports it as an invalid path instead of silently dropping it.
+    /// can't read, including any path git quoted (it does that for tabs, quotes,
+    /// backslashes and, unless `core.quotePath=false`, non-ASCII names), is kept
+    /// as a file whose path is the raw line, so the gate reports it as an invalid
+    /// path and fails closed instead of silently dropping or misfiling it.
     static func fromGitNameStatus(_ output: String, id: String, title: String, headCommit: String,
                                   evidence: [Evidence] = [], fixRounds: Int = 0,
                                   deletionReasons: [String: String] = [:]) -> ChangeSet {
         var files: [ChangedFile] = []
         for line in output.split(whereSeparator: \.isNewline) where !line.isEmpty {
             let fields = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-            guard let status = fields.first?.first else { continue }
+            let unparsed = ChangedFile("/unparsed: " + line)
+            guard let status = fields.first?.first,
+                  !fields.dropFirst().contains(where: { $0.isEmpty || $0.hasPrefix("\"") }) else {
+                files.append(unparsed)
+                continue
+            }
             switch (status, fields.count) {
             case ("A", 2): files.append(ChangedFile(fields[1], .added))
             case ("M", 2), ("T", 2): files.append(ChangedFile(fields[1], .modified))
             case ("D", 2): files.append(ChangedFile(fields[1], .deleted))
             case ("R", 3): files.append(ChangedFile(fields[2], .renamed(from: fields[1])))
             case ("C", 3): files.append(ChangedFile(fields[2], .added))
-            default: files.append(ChangedFile("/unparsed: " + line))
+            default: files.append(unparsed)
             }
         }
         return ChangeSet(id: id, title: title, headCommit: headCommit, files: files,

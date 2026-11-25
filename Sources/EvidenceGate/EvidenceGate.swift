@@ -108,12 +108,10 @@ public struct EvidenceGate: Sendable {
         }
         let fixable = findings.contains { $0.severity == .blocking }
         let decision: Decision
-        if structural {
-            decision = .block
-        } else if fixable && change.fixRounds >= policy.maxFixRounds {
+        if (structural || fixable) && change.fixRounds >= policy.maxFixRounds {
             findings.append(.stillBlockedAfterRounds(change.fixRounds))
             decision = .needsHuman
-        } else if fixable {
+        } else if structural || fixable {
             decision = .block
         } else if findings.contains(where: { $0.severity == .escalation }) {
             decision = .needsHuman

@@ -1,18 +1,21 @@
 /// A constructed week of agent changes on a made-up shopping app.
 /// The policy, paths and commits are illustrative, not from a real codebase.
+/// Commits are short SHAs for readability; record full SHAs in CI.
 public enum SampleWeek {
     public static let propertyMinimum = 1_000
 
     public static func policy(mode: GateMode = .enforce) -> GatePolicy {
         GatePolicy(
             protectedChecks: [
-                PathPattern("Tests/**"),
-                PathPattern("UITests/**"),
+                PathPattern("**/Tests/**"),
+                PathPattern("**/UITests/**"),
                 PathPattern("**/__Snapshots__/**"),
                 PathPattern("**/*.xctestplan"),
                 PathPattern("**/*.xcscheme"),
                 PathPattern("**/project.pbxproj"),
-                PathPattern("Package.swift"),
+                PathPattern("**/*.xcconfig"),
+                PathPattern("**/Package.swift"),
+                PathPattern("**/CODEOWNERS"),
                 PathPattern(".github/workflows/**"),
                 PathPattern("Scripts/**"),
                 PathPattern(".claude/**"),
