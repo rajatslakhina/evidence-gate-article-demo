@@ -96,7 +96,7 @@ Library tests run with `swift test`, or open `Package.swift` in Xcode and press 
 
 ## Tests
 
-47 Swift Testing tests in 7 suites, including five property tests. Each property runs 2,000 generated changes (8 fixed seeds × 250, with a deterministic SplitMix64 generator so a failure reproduces). The generator includes deletions with and without reasons, renames, `./` and `../` paths, case variants, sensitive files, untrusted and stale evidence, and property runs with no case count.
+48 Swift Testing tests in 7 suites, including five property tests. Each property runs 2,000 generated changes (8 fixed seeds × 250, with a deterministic SplitMix64 generator so a failure reproduces). The generator includes deletions with and without reasons, renames, `./` and `../` paths, case variants, sensitive files, untrusted and stale evidence, and property runs with no case count.
 
 - The order of files and evidence never changes the verdict.
 - Adding a test edit to a product change never lets it pass, and is always reported.
@@ -138,7 +138,7 @@ A further test checks the generator reaches pass, block and needs-a-person at le
 
 ## Verification status
 
-For the version in this repo: clean `swift build -Xswiftc -warnings-as-errors` and `swift test` (47 tests in 7 suites passed) on macOS with Xcode 27.2 / Swift 6.4.2. The demo app was built with `xcodebuild`, installed and launched on a fresh iPhone 17 Pro Simulator (iOS 27.2) for each tab, and confirmed still running; `week.png`, `observe.png` and `prompt.png` in `Demo/Screenshots/` come from that run, and `week-cropped.png` is `week.png` cropped above the tab bar. CI: (added after the first run)
+For the version in this repo: clean `swift build -Xswiftc -warnings-as-errors` and `swift test` (48 tests in 7 suites passed) on macOS with Xcode 27.2 / Swift 6.4.2. The demo app was built with `xcodebuild`, installed and launched on a fresh iPhone 17 Pro Simulator (iOS 27.2) for each tab, and confirmed still running; `week.png`, `observe.png` and `prompt.png` in `Demo/Screenshots/` come from that run, and `week-cropped.png` is `week.png` cropped above the tab bar. CI: (added after the first run)
 
 ## Sources
 

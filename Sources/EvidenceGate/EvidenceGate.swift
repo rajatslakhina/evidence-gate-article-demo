@@ -80,9 +80,12 @@ public struct EvidenceGate: Sendable {
             // A failed run on the head commit isn't erased by a later green run on that
             // commit: rerunning until it passes is how flaky checks get waved through.
             // Pushing a new commit to get a clean slate costs a fix round.
-            if let failed = candidates.first(where: { !$0.passed }) {
-                reportedFailures.append((failed.kind, failed.name))
-                findings.append(.failingEvidence(item: item, name: failed.name))
+            let failedNames = candidates.filter { !$0.passed }.map(\.name)
+            if !failedNames.isEmpty {
+                for name in Set(failedNames).sorted() {
+                    reportedFailures.append((requirement.kind, name))
+                    findings.append(.failingEvidence(item: item, name: name))
+                }
             } else if !satisfying.isEmpty {
                 satisfying.forEach { stampEntries.insert("\($0.kind.rawValue)(\($0.name))") }
             } else if let best = candidates.max(by: { ($0.cases ?? 0) < ($1.cases ?? 0) }) {

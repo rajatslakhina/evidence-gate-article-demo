@@ -102,6 +102,15 @@ struct EvidenceRuleTests {
         #expect(v.findings == [.failingEvidence(item: "baseline", name: "AppTests")])
     }
 
+    @Test func everyFailingRunOfARequiredKindIsLabelledWithItsRequirement() {
+        let change = ChangeSet(id: "x", title: "", headCommit: head,
+                               files: [ChangedFile("Sources/Profile/Avatar.swift")],
+                               evidence: [Evidence(kind: .unit, name: "B", commit: head, passed: false),
+                                          Evidence(kind: .unit, name: "A", commit: head, passed: false)])
+        #expect(gate.evaluate(change).findings == [.failingEvidence(item: "baseline", name: "A"),
+                                                   .failingEvidence(item: "baseline", name: "B")])
+    }
+
     @Test func anOldFailureDoesNotCountAgainstTheHeadCommit() {
         let change = ChangeSet(id: "x", title: "", headCommit: head,
                                files: [ChangedFile("Sources/Profile/Avatar.swift")],
