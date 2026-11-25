@@ -16,7 +16,9 @@ jobs:
   library:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Select the newest installed Xcode
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
       - name: Toolchain
         run: xcodebuild -version && swift --version
       - name: swift build (warnings as errors)
@@ -28,13 +30,15 @@ jobs:
     runs-on: macos-15
     needs: library
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Select the newest installed Xcode
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
       - name: Toolchain
         run: xcodebuild -version
       - name: Build, install, launch and screenshot on iOS Simulator
         run: bash Scripts/simulator-screenshots.sh
       - name: Upload screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: simulator-screenshots
           path: Demo/Screenshots/*.png

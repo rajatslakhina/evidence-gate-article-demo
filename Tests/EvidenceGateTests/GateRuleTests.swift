@@ -142,6 +142,70 @@ struct EvidenceRuleTests {
         #expect(gate.evaluate(change).decision == .block)
     }
 
+    @Test("Property case minimum is inclusive", arguments: [(1_000, Decision.pass), (999, .block)])
+    func propertyBoundary(cases: Int, expected: Decision) {
+        let change = ChangeSet(id: "x", title: "", headCommit: head,
+                               files: [ChangedFile("Sources/Networking/RetryPolicy.swift")],
+                               evidence: [unit(), Evidence(kind: .property, name: "retry-idempotent",
+                                                           commit: head, passed: true, cases: cases)])
+        #expect(gate.evaluate(change).decision == expected)
+    }
+
+    @Test func aRedRunNothingRequiredStillBlocks() {
+        let change = ChangeSet(id: "x", title: "", headCommit: head,
+                               files: [ChangedFile("Sources/Settings/SettingsView.swift")],
+                               evidence: [unit(), Evidence(kind: .endToEnd, name: "checkout-flow",
+                                                           commit: head, passed: false)])
+        let v = gate.evaluate(change)
+        #expect(v.decision == .block)
+        #expect(v.findings == [.failingEvidence(item: "not required", name: "checkout-flow")])
+    }
+
+    @Test func missingEvidenceAfterTheRoundLimitEscalates() {
+        let change = ChangeSet(id: "x", title: "", headCommit: head,
+                               files: [ChangedFile("Sources/Profile/Avatar.swift")], fixRounds: 3)
+        let v = gate.evaluate(change)
+        #expect(v.decision == .needsHuman)
+        #expect(v.findings.last == .stillBlockedAfterRounds(3))
+    }
+
+    @Test("Sensitive paths always go to a person", arguments: [
+        "App/App.entitlements", "App/Info.plist", "App/PrivacyInfo.xcprivacy",
+        "App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved", "Sources/Auth/Token.swift",
+    ])
+    func sensitivePath(path: String) {
+        let change = ChangeSet(id: "x", title: "", headCommit: head, files: [ChangedFile(path)], evidence: [unit()])
+        let v = gate.evaluate(change)
+        #expect(v.decision == .needsHuman)
+        #expect(v.findings == [.sensitivePath([path])])
+    }
+
+    @Test("Files that decide which checks run are protected", arguments: [
+        "Demo.xcodeproj/xcshareddata/xcschemes/Demo.xcscheme", "Demo.xcodeproj/project.pbxproj",
+        "Package.swift", "Scripts/run-ui-tests.sh", ".claude/settings.json", ".claude/hooks/record-evidence.sh",
+    ])
+    func checkControlFilesAreProtected(path: String) {
+        let change = ChangeSet(id: "x", title: "", headCommit: head,
+                               files: [ChangedFile("Sources/Profile/Avatar.swift"), ChangedFile(path)],
+                               evidence: [unit()])
+        let v = gate.evaluate(change)
+        #expect(v.decision == .needsHuman)
+        #expect(v.findings == [.modifiesOwnChecks([path])])
+    }
+
+    @Test func deletionWithNoReasonEntryBlocks() {
+        let change = ChangeSet(id: "x", title: "", headCommit: head,
+                               files: [ChangedFile("Tests/ProfileTests/AvatarTests.swift", .deleted)])
+        #expect(gate.evaluate(change).decision == .block)
+    }
+
+    @Test func reasonKeyedByTheRawPathCounts() {
+        let raw = "./Tests/ProfileTests/AvatarTests.swift"
+        let change = ChangeSet(id: "x", title: "", headCommit: head, files: [ChangedFile(raw, .deleted)],
+                               deletionReasons: [raw: "Duplicates AvatarFlowTests."])
+        #expect(gate.evaluate(change).decision == .needsHuman)
+    }
+
     @Test func roundLimitHasAFloorOfOne() {
         let policy = GatePolicy(protectedChecks: [], maxFixRounds: 0)
         #expect(policy.maxFixRounds == 1)
@@ -170,11 +234,13 @@ struct PromptTests {
     @Test func promptIsRenderedFromThePolicy() {
         let prompt = PromptRenderer.instructions(policy: SampleWeek.policy(),
                                                  plannedPaths: ["Sources/Checkout/PlaceOrderButton.swift"])
-        #expect(prompt.contains("Tests/**, UITests/**, **/__Snapshots__/**, **/*.xctestplan, .github/workflows/**, .gate/**"))
+        #expect(prompt.contains("Tests/**, UITests/**, **/__Snapshots__/**, **/*.xctestplan, **/*.xcscheme, **/project.pbxproj, Package.swift, .github/workflows/**, Scripts/**, .claude/**, .gate/**"))
+        #expect(prompt.contains("You may add a new test there"))
+        #expect(prompt.contains("add the property test that would have caught it as a new test"))
         #expect(prompt.contains("- baseline: unit (any)"))
         #expect(prompt.contains("- REL-02 Checkout still completes end to end: end-to-end \"checkout-flow\"; simulator run (any)"))
         #expect(!prompt.contains("REL-01"))
-        #expect(prompt.contains("after 3 fix rounds"))
+        #expect(prompt.contains("still blocked after 3 fix rounds"))
         #expect(prompt.contains("recorded by ci or hook"))
     }
 
@@ -182,5 +248,28 @@ struct PromptTests {
         let prompt = PromptRenderer.instructions(policy: SampleWeek.policy(),
                                                  plannedPaths: ["Tests/A.swift"])
         #expect(!prompt.contains("- baseline"))
+    }
+}
+
+@Suite("Git name-status")
+struct GitNameStatusTests {
+    @Test func parsesEveryStatus() {
+        let output = "M\tSources/A.swift\nA\tSources/B.swift\nD\tTests/CTests.swift\nR087\tTests/D.swift\tSources/D.swift\nC100\tSources/E.swift\tSources/F.swift\nT\tScripts/g.sh\n"
+        let change = ChangeSet.fromGitNameStatus(output, id: "x", title: "", headCommit: head)
+        #expect(change.files == [
+            ChangedFile("Sources/A.swift", .modified),
+            ChangedFile("Sources/B.swift", .added),
+            ChangedFile("Tests/CTests.swift", .deleted),
+            ChangedFile("Sources/D.swift", .renamed(from: "Tests/D.swift")),
+            ChangedFile("Sources/F.swift", .added),
+            ChangedFile("Scripts/g.sh", .modified),
+        ])
+    }
+
+    @Test func anUnreadableLineBecomesAnInvalidPathInsteadOfVanishing() {
+        let change = ChangeSet.fromGitNameStatus("X\tweird", id: "x", title: "", headCommit: head, evidence: [unit()])
+        let v = gate.evaluate(change)
+        #expect(v.decision == .block)
+        #expect(v.findings.first == .invalidPath("/unparsed: X\tweird"))
     }
 }

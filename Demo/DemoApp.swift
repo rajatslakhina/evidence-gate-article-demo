@@ -38,16 +38,17 @@ struct WeekView: View {
         List {
             Section {
                 HStack(spacing: 10) {
-                    Tally(count: v.filter { $0.decision == .pass }.count, label: "pass", color: .green)
+                    Tally(count: v.filter { $0.decision == .pass }.count,
+                          label: mode == .observe ? "would pass" : "pass", color: .green)
                     Tally(count: v.filter { $0.decision == .block }.count,
-                          label: mode == .observe ? "would block" : "back to agent", color: .orange)
+                          label: mode == .observe ? "would go to agent" : "back to agent", color: .orange)
                     Tally(count: v.filter { $0.decision == .needsHuman }.count,
                           label: mode == .observe ? "would need a person" : "need a person", color: .blue)
                 }
                 .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
             } footer: {
                 Text(mode == .observe
-                     ? "Observe mode merges everything and logs what enforce would have done."
+                     ? "Observe mode merges all 8 and logs what enforce would have done."
                      : "8 agent changes in a constructed week, judged by evidence on the head commit.")
             }
             Section("Changes") {
@@ -98,8 +99,9 @@ private struct Badge: View {
     var body: some View {
         let (text, color): (String, Color) = switch decision {
         case .pass: ("PASS", .green)
-        case .block: (observing ? "WOULD BLOCK" : "BLOCK", .orange)
-        case .needsHuman: (observing ? "WOULD ESCALATE" : "PERSON", .blue)
+        case .block: (observing ? "WOULD GO TO AGENT" : "TO AGENT", .orange)
+        case .needsHuman: (observing ? "WOULD GO TO PERSON" : "PERSON", .blue)
+        case .notEvaluated: ("NOT RUN", .gray)
         }
         Text(text).font(.caption2.bold()).padding(.horizontal, 6).padding(.vertical, 2)
             .background(color.opacity(0.18), in: Capsule()).foregroundStyle(color)

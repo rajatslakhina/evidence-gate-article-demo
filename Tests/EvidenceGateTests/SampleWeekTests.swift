@@ -67,7 +67,7 @@ struct SampleWeekTests {
     @Test func threeFailedRoundsEscalate() throws {
         let v = try verdict("CHK-103")
         #expect(v.findings == [.failingEvidence(item: "REL-02", name: "checkout-flow"),
-                               .stillFailingAfterRounds(3)])
+                               .stillBlockedAfterRounds(3)])
     }
 
     @Test func passingChangesCarryAStamp() throws {
@@ -88,6 +88,6 @@ struct SampleWeekTests {
 
     @Test func offModeDoesNotRun() {
         let off = SampleWeek.verdicts(mode: .off)
-        #expect(off.allSatisfy { $0.decision == .pass && $0.findings.isEmpty && $0.stamp == "verified-by: none" })
+        #expect(off.allSatisfy { $0.decision == .notEvaluated && $0.enforced == .pass && $0.findings.isEmpty && $0.stamp == "verified-by: none" })
     }
 }

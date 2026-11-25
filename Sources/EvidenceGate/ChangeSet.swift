@@ -24,14 +24,16 @@ public struct ChangedFile: Hashable, Sendable {
 }
 
 /// A change an agent wants to merge, with the evidence recorded for it.
+/// Build this in CI from git, never from the agent's own report: the gate
+/// trusts every field.
 public struct ChangeSet: Sendable, Identifiable {
     public let id: String
     public let title: String
-    /// The commit the evidence has to be about.
+    /// The commit the evidence has to be about. Use the full SHA: commits are compared exactly.
     public let headCommit: String
     public let files: [ChangedFile]
     public let evidence: [Evidence]
-    /// Rounds the agent has already spent trying to fix failing checks.
+    /// Rounds the agent has already spent on this change, counted by CI.
     public let fixRounds: Int
     /// Why each deleted check was deleted, keyed by path.
     public let deletionReasons: [String: String]
@@ -46,5 +48,32 @@ public struct ChangeSet: Sendable, Identifiable {
         self.evidence = evidence
         self.fixRounds = max(0, fixRounds)
         self.deletionReasons = deletionReasons
+    }
+}
+
+public extension ChangeSet {
+    /// Reads the output of `git diff --name-status -M <base>...<head>`.
+    ///
+    /// Handles `A`, `M`, `D`, `T` and `R<score>`/`C<score>` lines. A line it
+    /// can't read is kept as a modified file with the raw text as its path, so
+    /// the gate reports it as an invalid path instead of silently dropping it.
+    static func fromGitNameStatus(_ output: String, id: String, title: String, headCommit: String,
+                                  evidence: [Evidence] = [], fixRounds: Int = 0,
+                                  deletionReasons: [String: String] = [:]) -> ChangeSet {
+        var files: [ChangedFile] = []
+        for line in output.split(whereSeparator: \.isNewline) where !line.isEmpty {
+            let fields = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+            guard let status = fields.first?.first else { continue }
+            switch (status, fields.count) {
+            case ("A", 2): files.append(ChangedFile(fields[1], .added))
+            case ("M", 2), ("T", 2): files.append(ChangedFile(fields[1], .modified))
+            case ("D", 2): files.append(ChangedFile(fields[1], .deleted))
+            case ("R", 3): files.append(ChangedFile(fields[2], .renamed(from: fields[1])))
+            case ("C", 3): files.append(ChangedFile(fields[2], .added))
+            default: files.append(ChangedFile("/unparsed: " + line))
+            }
+        }
+        return ChangeSet(id: id, title: title, headCommit: headCommit, files: files,
+                         evidence: evidence, fixRounds: fixRounds, deletionReasons: deletionReasons)
     }
 }

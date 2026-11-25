@@ -12,9 +12,10 @@ mkdir -p "$OUT"
 UDID="${SIM_UDID:-}"
 if [ -z "$UDID" ]; then
 UDID=$(xcrun simctl list devices available -j | python3 -c '
-import json, sys
+import json, re, sys
 devices = json.load(sys.stdin)["devices"]
-for runtime, items in sorted(devices.items(), reverse=True):
+version = lambda runtime: [int(n) for n in re.findall(r"\d+", runtime)]
+for runtime, items in sorted(devices.items(), key=lambda kv: version(kv[0]), reverse=True):
     if "iOS" not in runtime:
         continue
     for d in items:

@@ -61,23 +61,30 @@ public enum GateMode: String, Sendable, CaseIterable {
 /// Load this from the base branch, never from the change being judged.
 /// The gate can't check where the value came from; your CI has to.
 public struct GatePolicy: Sendable {
-    /// Paths that judge changes: tests, snapshots, CI config and this policy's own file.
+    /// Paths that judge changes or decide which checks run and who records evidence:
+    /// tests, snapshots, test plans, schemes, project and package files, CI config and
+    /// scripts, hook config, and the folder you keep this policy in.
     public var protectedChecks: [PathPattern]
+    /// Paths a person always reviews, however complete the evidence: entitlements,
+    /// privacy manifests, dependency pins, auth code. Green tests don't make these safe.
+    public var sensitivePaths: [PathPattern]
     /// Evidence every change to product code needs.
     public var baseline: [EvidenceRequirement]
     public var checklist: [ChecklistItem]
     public var trustedProducers: Set<EvidenceProducer>
-    /// Fix rounds after which a still-failing check goes to a person.
+    /// Fix rounds after which a change that is still blocked goes to a person.
     public var maxFixRounds: Int
     public var mode: GateMode
 
     public init(protectedChecks: [PathPattern],
+                sensitivePaths: [PathPattern] = [],
                 baseline: [EvidenceRequirement] = [EvidenceRequirement(.unit)],
                 checklist: [ChecklistItem] = [],
                 trustedProducers: Set<EvidenceProducer> = [.ci, .hook],
                 maxFixRounds: Int = 3,
                 mode: GateMode = .enforce) {
         self.protectedChecks = protectedChecks
+        self.sensitivePaths = sensitivePaths
         self.baseline = baseline
         self.checklist = checklist
         self.trustedProducers = trustedProducers
@@ -87,6 +94,10 @@ public struct GatePolicy: Sendable {
 
     public func isProtected(_ normalizedPath: String) -> Bool {
         protectedChecks.contains { $0.matches(normalizedPath) }
+    }
+
+    public func isSensitive(_ normalizedPath: String) -> Bool {
+        sensitivePaths.contains { $0.matches(normalizedPath) }
     }
 
     public func triggeredItems(for normalizedPaths: some Sequence<String>) -> [ChecklistItem] {

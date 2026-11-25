@@ -17,7 +17,7 @@ struct SplitMix64: RandomNumberGenerator {
 private let productRoots = ["Sources/Checkout", "Sources/Persistence", "Sources/Networking",
                             "Sources/Settings", "Sources/Profile"]
 private let checkRoots = ["Tests/AppTests", "UITests", "Sources/Checkout/__Snapshots__",
-                          ".github/workflows", ".gate"]
+                          ".github/workflows", ".gate", "tests/AppTests", ".claude", "Scripts"]
 private let commits = ["aaa1111", "bbb2222", "ccc3333"]
 private let casesPerSeed = 250
 private let seeds: [UInt64] = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -29,6 +29,27 @@ private extension SplitMix64 {
 
     mutating func path(in roots: [String]) -> String {
         "\(pick(roots))/F\(Int.random(in: 0..<20, using: &self)).swift"
+    }
+
+    /// Occasionally dresses a path up with `./` or `x/../`, which must not change the verdict
+    /// unless it climbs out of the repository.
+    mutating func disguised(_ path: String) -> String {
+        switch Int.random(in: 0..<12, using: &self) {
+        case 0: "./" + path
+        case 1: "Sources/../" + path
+        case 2: "../" + path
+        default: path
+        }
+    }
+
+    mutating func file() -> ChangedFile {
+        let path = disguised(self.path(in: Bool.random(using: &self) ? productRoots : checkRoots))
+        switch Int.random(in: 0..<6, using: &self) {
+        case 0: return ChangedFile(path, .deleted)
+        case 1: return ChangedFile(path, .renamed(from: self.path(in: Bool.random(using: &self) ? productRoots : checkRoots)))
+        case 2: return ChangedFile(path, .added)
+        default: return ChangedFile(path)
+        }
     }
 
     mutating func evidence(head: String) -> Evidence {
@@ -43,18 +64,37 @@ private extension SplitMix64 {
         return Evidence(kind: kind, name: name,
                         commit: Bool.random(using: &self) ? head : pick(commits),
                         passed: Int.random(in: 0..<5, using: &self) > 0,
-                        cases: kind == .property ? pick([10, 999, 1_000, 5_000]) : nil,
+                        cases: kind == .property ? pick([nil, 10, 999, 1_000, 5_000]) : nil,
                         producer: pick(EvidenceProducer.allCases))
     }
 
     mutating func change() -> ChangeSet {
         let head = pick(commits)
-        let files = (0..<Int.random(in: 1...4, using: &self)).map { _ in
-            ChangedFile(path(in: Bool.random(using: &self) ? productRoots : checkRoots))
+        // A quarter of the time, build a change that's close to passing, so the
+        // properties about passes see plenty of them.
+        if Int.random(in: 0..<4, using: &self) == 0 {
+            let files = (0..<Int.random(in: 1...3, using: &self)).map { _ in ChangedFile(path(in: productRoots)) }
+            var evidence = [Evidence(kind: .unit, name: "AppTests", commit: head, passed: true)]
+            for kind in [EvidenceKind.endToEnd, .simulatorRun, .differential] where Bool.random(using: &self) {
+                let name = kind == .endToEnd ? "checkout-flow" : kind == .differential ? "store-migration" : "iPhone 17 Pro"
+                evidence.append(Evidence(kind: kind, name: name, commit: head, passed: true))
+            }
+            for name in ["order-round-trip", "retry-idempotent"] where Bool.random(using: &self) {
+                evidence.append(Evidence(kind: .property, name: name, commit: head, passed: true,
+                                         cases: pick([999, 1_000, 5_000])))
+            }
+            if Int.random(in: 0..<4, using: &self) == 0 { evidence.append(self.evidence(head: head)) }
+            return ChangeSet(id: "gen", title: "", headCommit: head, files: files, evidence: evidence,
+                             fixRounds: Int.random(in: 0...4, using: &self))
         }
+        let files = (0..<Int.random(in: 1...4, using: &self)).map { _ in file() }
         let evidence = (0..<Int.random(in: 0...6, using: &self)).map { _ in self.evidence(head: head) }
+        var reasons: [String: String] = [:]
+        for f in files where f.change == .deleted && Bool.random(using: &self) {
+            reasons[f.path] = "Flaky on CI; root cause not found."
+        }
         return ChangeSet(id: "gen", title: "", headCommit: head, files: files, evidence: evidence,
-                         fixRounds: Int.random(in: 0...4, using: &self))
+                         fixRounds: Int.random(in: 0...4, using: &self), deletionReasons: reasons)
     }
 }
 
@@ -87,7 +127,9 @@ struct GatePropertyTests {
                 id: c.id, title: c.title, headCommit: c.headCommit,
                 files: c.files + [ChangedFile(rng.path(in: productRoots)), ChangedFile(rng.path(in: checkRoots))],
                 evidence: c.evidence, fixRounds: c.fixRounds)
-            #expect(gate.evaluate(withEdit).decision != .pass)
+            let v = gate.evaluate(withEdit)
+            #expect(v.decision != .pass)
+            #expect(v.findings.contains { if case .modifiesOwnChecks = $0 { true } else { false } })
         }
     }
 
@@ -126,10 +168,14 @@ struct GatePropertyTests {
         for _ in 0..<casesPerSeed {
             let c = rng.change()
             guard gate.evaluate(c).decision == .pass else { continue }
-            let paths = c.files.compactMap { RepoPath.normalize($0.path) }
+            let raw = c.files.flatMap(\.touchedPaths)
+            let paths = raw.compactMap(RepoPath.normalize)
+            #expect(paths.count == raw.count)
             #expect(!paths.contains(where: policy.isProtected))
+            #expect(!paths.contains(where: policy.isSensitive))
             let requirements = policy.baseline + policy.triggeredItems(for: paths).flatMap(\.requires)
             let fresh = c.evidence.filter { $0.commit == c.headCommit && policy.trustedProducers.contains($0.producer) }
+            #expect(fresh.allSatisfy { $0.passed })
             for r in requirements {
                 let runs = fresh.filter(r.accepts)
                 #expect(runs.allSatisfy { $0.passed })
@@ -145,6 +191,6 @@ struct GatePropertyTests {
             var rng = SplitMix64(seed: seed)
             for _ in 0..<casesPerSeed { counts[gate.evaluate(rng.change()).decision, default: 0] += 1 }
         }
-        for decision in Decision.allCases { #expect(counts[decision, default: 0] >= 20) }
+        for decision in [Decision.pass, .block, .needsHuman] { #expect(counts[decision, default: 0] >= 20) }
     }
 }

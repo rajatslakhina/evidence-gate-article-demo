@@ -5,6 +5,8 @@ public enum Decision: String, Sendable, CaseIterable {
     case block
     /// A person has to look, and the findings say why.
     case needsHuman
+    /// The gate is off and didn't run.
+    case notEvaluated
 }
 
 public enum Finding: Hashable, Sendable {
@@ -16,18 +18,19 @@ public enum Finding: Hashable, Sendable {
     case emptyChange
     case invalidPath(String)
     case modifiesOwnChecks([String])
+    case sensitivePath([String])
     case deletedCheckWithoutReason(String)
     case missingEvidence(item: String, requirement: EvidenceRequirement)
     case failingEvidence(item: String, name: String)
     case insufficientCases(item: String, name: String, ran: Int, required: Int)
-    case stillFailingAfterRounds(Int)
+    case stillBlockedAfterRounds(Int)
     case checkChangeNeedsOwner([String])
     case staleEvidence(name: String, commit: String)
     case untrustedEvidence(name: String, producer: EvidenceProducer)
 
     public var severity: Severity {
         switch self {
-        case .stillFailingAfterRounds, .checkChangeNeedsOwner, .modifiesOwnChecks: .escalation
+        case .stillBlockedAfterRounds, .checkChangeNeedsOwner, .modifiesOwnChecks, .sensitivePath: .escalation
         case .staleEvidence, .untrustedEvidence: .note
         default: .blocking
         }
@@ -49,8 +52,10 @@ public enum Finding: Hashable, Sendable {
             "\(item): \(name) failed."
         case .insufficientCases(let item, let name, let ran, let required):
             "\(item): \(name) ran \(ran) cases; needs \(required)."
-        case .stillFailingAfterRounds(let n):
-            "Still failing after \(n) fix rounds. Stop and hand over."
+        case .sensitivePath(let paths):
+            "Touches paths a person always reviews: \(paths.joined(separator: ", "))."
+        case .stillBlockedAfterRounds(let n):
+            "Still blocked after \(n) fix rounds. Stop and hand over."
         case .checkChangeNeedsOwner(let paths):
             "Changes only checks (\(paths.joined(separator: ", "))). The check owner reviews it."
         case .staleEvidence(let name, let commit):
@@ -65,7 +70,7 @@ public struct Verdict: Sendable {
     public let changeID: String
     /// What the policy decided.
     public let decision: Decision
-    /// What actually happens. In observe mode this is always `.pass`.
+    /// What actually happens. In observe and off mode this is always `.pass`.
     public let enforced: Decision
     /// Blocking findings first, then escalations, then notes.
     public let findings: [Finding]

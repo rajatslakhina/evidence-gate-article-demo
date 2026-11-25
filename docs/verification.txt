@@ -1,0 +1,58 @@
+# Verification log for this version
+
+## Toolchain
+Xcode 27.2
+Build version 27B52
+swift-driver version: 1.168.6 Apple Swift version 6.4.2 (swiftlang-6.4.2.1.9 clang-2100.4.1.1)
+Target: arm64-apple-macosx27.2.0
+ProductName:		macOS
+ProductVersion:		27.2.1
+BuildVersion:		26B131
+
+## $ rm -rf .build && swift build -Xswiftc -warnings-as-errors
+Building for debugging...
+Build complete! (9.65 secs)
+
+## $ swift test
+Test Suite 'All tests' passed at 2026-11-25 11:39:57.085.
+􁁛  Test "Files that decide which checks run are protected" with 6 test cases passed after 0.553 seconds.
+􁁛  Test "Property case minimum is inclusive" with 2 test cases passed after 0.569 seconds.
+􁁛  Test "Sensitive paths always go to a person" with 5 test cases passed after 0.569 seconds.
+􁁛  Test "Evidence about another commit never satisfies anything" with 8 test cases passed after 0.570 seconds.
+􁁛  Test "A pass always means every required check has fresh, trusted, green evidence" with 8 test cases passed after 0.570 seconds.
+􁁛  Test "Order of files and evidence never changes the verdict" with 8 test cases passed after 0.570 seconds.
+􁁛  Test "Observe mode changes what happens, never what the policy decides" with 8 test cases passed after 0.570 seconds.
+􁁛  Test "Each change gets the decision the article describes" with 8 test cases passed after 0.569 seconds.
+􁁛  Test "Globs" with 9 test cases passed after 0.569 seconds.
+􁁛  Test "Normalization" with 5 test cases passed after 0.569 seconds.
+􁁛  Suite "Evidence report" passed after 0.571 seconds.
+􁁛  Suite "Prompt" passed after 0.571 seconds.
+􁁛  Suite "Path rules" passed after 0.571 seconds.
+􁁛  Suite "Evidence rules" passed after 0.571 seconds.
+􁁛  Suite "Git name-status" passed after 0.571 seconds.
+􁁛  Suite "Sample week" passed after 0.571 seconds.
+􁁛  Test "Adding a test edit to a product change never lets it pass" with 8 test cases passed after 0.638 seconds.
+􁁛  Test "The generator reaches every decision, so the properties above aren't vacuous" passed after 0.685 seconds.
+􁁛  Suite "Gate properties" passed after 0.686 seconds.
+􁁛  Test run with 45 tests in 7 suites passed after 0.686 seconds.
+
+## Deliberate mutations (each must make the suite fail)
+== Mutation 1: ignore the head-commit check (if e.commit != change.headCommit -> if false)
+􀢄  Test run with 45 tests in 7 suites failed after 2.553 seconds with 1169 issues.
+== Mutation 2: let a green run cancel a failure (check satisfying before failed)
+􀢄  Test run with 45 tests in 7 suites failed after 1.483 seconds with 1 issue.
+== Mutation 3: make the case minimum exclusive (>= minimum -> > minimum)
+1
+􀢄  Test run with 45 tests in 7 suites failed after 1.425 seconds with 47 issues.
+== Unmutated
+􁁛  Test run with 45 tests in 7 suites passed after 1.082 seconds.
+
+## Simulator run: SIM_UDID=<new device> bash Scripts/simulator-screenshots.sh
+Using simulator 11DB6276-CA3D-4995-BD62-323554CD914C
+** BUILD SUCCEEDED **
+com.rajatlakhina.EvidenceGateDemo: 97179
+com.rajatlakhina.EvidenceGateDemo: 97286
+com.rajatlakhina.EvidenceGateDemo: 97427
+(each 'com.rajatlakhina.EvidenceGateDemo: <pid>' line is the app still running 8 s after launch with -tab week, -tab observe, -tab prompt)
+Device: EvidenceGate-1125 11DB6276-CA3D-4995-BD62-323554CD914C type com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro runtime com.apple.CoreSimulator.SimRuntime.iOS-27-2
+week-cropped.png = week.png cropped to 1206x2214 (above the floating tab bar).

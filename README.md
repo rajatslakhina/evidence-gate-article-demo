@@ -1,6 +1,6 @@
 # EvidenceGate
 
-A small Swift package that judges a coding agent's change by the **evidence recorded for its head commit**, not by what the agent says about it. It's the demo for the article *More Reviewers Won't Fix the Coding Agent Review Bottleneck. Verification the Agent Can't Edit Might.*
+A small Swift library that judges a coding agent's change by the **evidence recorded for its head commit**, not by what the agent says about it. It's the demo for the article *More Reviewers Won't Fix the Coding Agent Review Bottleneck. Verification the Agent Can't Edit Might.*
 
 Article: (added after publish)
 
@@ -8,39 +8,62 @@ Article: (added after publish)
 
 ## What it does
 
-Each rule comes from the Claude Code team's [verification playbook](https://claude.dev/blog/how-the-claude-code-team-thinks-about-verification/) (Addy Osmani, 16 Nov 2026), translated for an iOS repo:
+Most rules come from the Claude Code team's post, [How the Claude Code team thinks about verification](https://claude.dev/blog/how-the-claude-code-team-thinks-about-verification/) (Addy Osmani, 16 Nov 2026). Two are my additions, marked below.
 
 | Rule | What the gate does |
 |------|--------------------|
 | Checks trigger on the diff | A `ChecklistItem` names the paths that trigger it (`Sources/Persistence/**`) and the evidence it needs (a differential migration test, a property test with at least 1,000 cases). Only triggered items apply. |
-| Evidence is about the head commit | Records for any other commit are ignored and listed as notes. |
-| Only tooling writes evidence | Records from `ci` or `hook` count by default. An `agent` record ("all tests pass") doesn't. |
-| A rerun doesn't erase a failure | If a required check failed on the head commit, a later green run of the same code doesn't cancel it. |
-| A change can't pass on its own evidence if it edits its checks | Tests, UI tests, snapshots, test plans, CI workflows and `.gate/**` are protected. Editing them in a product change sends it to a person. Paths are normalized (`Sources/../Tests/x` is caught), renames count at both ends, and matching ignores case, because the default macOS file system does. |
-| Three fix rounds, then a person | A check still failing after `maxFixRounds` (default 3) escalates. Fewer rounds go back to the agent. |
-| No quiet deletions | Deleting a protected file without a written reason blocks; with one, the check owner reviews it. |
-| Start in observe mode | `.observe` lets everything through and records what `.enforce` would have done. `.off` doesn't run. |
+| Evidence is about the head commit | Records for any other commit are ignored and listed as notes. Commits are compared exactly, so use full SHAs. |
+| A change can't pass on its own evidence if it edits its checks | Protected paths cover tests, UI tests, snapshots and test plans, plus what decides which checks run or who records evidence: schemes, `project.pbxproj`, `Package.swift`, CI workflows, `Scripts/`, `.claude/` and `.gate/` (where you'd keep the policy). Editing them in a product change sends it to a person. Paths are normalized (`Sources/../Tests/x` is caught), renames count at both ends, and matching ignores case, because the default macOS file system does. |
+| No quiet deletions | Deleting a protected file without a written reason goes back to the agent; with one, the check owner reviews it. |
+| A round limit, then a person | A change still blocked after `maxFixRounds` (default 3) escalates. Fewer rounds go back to the agent. |
+| Observe before enforce | `.observe` lets everything through and records what `.enforce` would have done. `.off` doesn't run (`decision == .notEvaluated`). |
 | Stamp every commit | Each verdict carries a `verified-by:` trailer. `verified-by: none` is a valid answer. |
+| A red run counts *(my addition)* | Any trusted failure on the head commit blocks, even if a later run of the same code is green or nothing required that check. Builds on the post's rule that Claude "can't skip [flaky tests], add sleeps or retry until they pass". |
+| Sensitive paths always get a person *(my addition)* | `sensitivePaths` (entitlements, `Info.plist`, privacy manifests, `Package.resolved`, `Sources/Auth/**` in the sample) escalate however complete the evidence is. A pass means the evidence is complete, not that the change is safe. |
+
+Evidence records carry a `producer`: `ci`, `hook` or `agent`. The default policy trusts `ci` and `hook`. The label isn't verified, so produce those records somewhere the agent can't write (see Limits).
 
 ```swift
 import EvidenceGate
 
-let gate = EvidenceGate(policy: SampleWeek.policy())     // load your real policy from the base branch
+let gate = EvidenceGate(policy: policy)                    // loaded from the base branch, never the PR
 let verdict = gate.evaluate(change)
 
 switch verdict.enforced {
-case .pass:       print(verdict.stamp)                   // verified-by: endToEnd(checkout-flow), ...
-case .block:      print(verdict.findings.map(\.message)) // back to the agent
-case .needsHuman: print(verdict.findings.map(\.message)) // the reason a person is reading it
+case .pass:         print(verdict.stamp)                   // verified-by: endToEnd(checkout-flow), ...
+case .block:        print(verdict.findings.map(\.message)) // back to the agent
+case .needsHuman:   print(verdict.findings.map(\.message)) // why a person is reading it
+case .notEvaluated: break                                  // never returned as `enforced`
 }
 ```
 
-The agent's instructions are rendered from the same policy, so the prompt and the gate can't drift:
+The agent's instructions are rendered from the same policy, so the protected paths, required evidence and round limit can't drift from what the gate enforces:
 
 ```swift
 let prompt = PromptRenderer.instructions(policy: policy,
                                          plannedPaths: ["Sources/Checkout/PlaceOrderButton.swift"])
 ```
+
+## Wiring it into CI
+
+Build every input in CI, never from the agent's own report. The gate trusts every field of `ChangeSet`: if the agent supplied the file list, it could leave the test file out.
+
+```swift
+// git diff --name-status -M origin/main...HEAD
+let change = ChangeSet.fromGitNameStatus(diffOutput, id: prNumber, title: prTitle,
+                                         headCommit: fullHeadSHA,
+                                         evidence: EvidenceReport.parse(jsonLines: evidenceFile).evidence,
+                                         fixRounds: roundsCountedByCI)
+```
+
+Each evidence record is one JSON line, written by your CI job or verify hook after the check runs:
+
+```json
+{"kind":"property","name":"order-round-trip","commit":"<full head SHA>","passed":true,"cases":2000,"producer":"ci"}
+```
+
+`EvidenceReport.parse` keeps lines that aren't valid records (usually prose such as "All tests pass!") in `unparsedLines`, so a reviewer can see them, but they never count. There's no CLI or GitHub Action in this repo; it's a library your CI job calls.
 
 ## The constructed week
 
@@ -57,55 +80,60 @@ let prompt = PromptRenderer.instructions(policy: policy,
 | FLK-501 Delete a flaky snapshot test | person | checks-only change with a written reason: the owner reviews it |
 | CHK-103 Show the Apple Pay sheet | person | `checkout-flow` still failing after 3 fix rounds |
 
-In observe mode all eight merge, and the verdicts record the 3 that enforce would block and the 3 it would escalate.
+In observe mode all eight merge, and the verdicts record the 3 that enforce would send back and the 3 it would escalate.
 
 ## How to run it
 
 1. `git clone https://github.com/rajatslakhina/evidence-gate-article-demo.git`
-2. Open `Demo.xcodeproj` in Xcode 16 or later (built here with Xcode 27.2).
+2. Open `Demo.xcodeproj` (needs Xcode 16 or later for Swift tools 6.0; tested with Xcode 27.2).
 3. Pick any iPhone Simulator and press Run. No other setup: the app uses this repo's package through a local package reference.
 
 Tabs: **Enforce** (the week), **Observe** (the same week in observe mode), **Prompt** (the rendered instructions for a checkout change). Tap a change to see every finding and its commit trailer.
 
-Library only: `swift build` and `swift test`.
+Library tests run with `swift test`, or open `Package.swift` in Xcode and press Cmd+U. The Demo scheme has no test action.
 
 ## Tests
 
-36 Swift Testing tests in 6 suites, including five property tests. Each property runs 2,000 generated changes (8 fixed seeds × 250, with a deterministic SplitMix64 generator so a failure reproduces):
+45 Swift Testing tests in 7 suites, including five property tests. Each property runs 2,000 generated changes (8 fixed seeds × 250, with a deterministic SplitMix64 generator so a failure reproduces). The generator includes deletions with and without reasons, renames, `./` and `../` paths, case variants, untrusted and stale evidence, and property runs with no case count.
 
-- the order of files and evidence never changes the verdict;
-- adding a test edit to a product change never lets it pass;
-- evidence about another commit never satisfies anything;
-- observe mode changes what happens, never what the policy decides;
-- a pass always means every required check has fresh, trusted, green evidence.
+- The order of files and evidence never changes the verdict.
+- Adding a test edit to a product change never lets it pass, and is always reported.
+- Evidence about another commit never satisfies anything.
+- Observe mode changes what happens, never what the policy decides.
+- A pass always means every required check has fresh, trusted, green evidence, no trusted red run, and no protected or sensitive path.
 
-A sixth test checks the generator reaches every decision at least 20 times, so the properties aren't passing on empty input. Before publishing I broke the gate twice on purpose (ignoring the commit check, and letting a later pass cancel a failure); the suite failed both times.
+A further test checks the generator reaches pass, block and needs-a-person at least 20 times each, so the properties aren't passing on empty input. I also broke the gate three ways on purpose: ignoring the commit check, letting a green run cancel a red one, and making the case minimum exclusive. The suite failed each time; the output is in `docs/verification.txt`.
 
 ## Questions you might have
 
-**How do I use this on my own repo?** Write your protected paths and two or three checklist items from real incidents, have CI and your verify hook write evidence as JSON Lines (`EvidenceReport.parse(jsonLines:)`), and run the gate in `.observe` for a couple of weeks before `.enforce`. Load the policy from the base branch in CI, never from the pull request.
+**How do I use this on my own repo?** List your protected and sensitive paths, write two or three checklist items from real incidents, have CI write evidence as JSON Lines, and run the gate in `.observe` for a couple of weeks before `.enforce`. Load the policy from the base branch in CI, as the Claude Code team does with REVIEW.md ("never from the pull request's changes").
 
 **Isn't this CODEOWNERS plus required checks?** Those are parts of it. Branch protection ties status checks to the head commit and CODEOWNERS routes test edits to a reviewer, but required checks are set per branch, not per diff, and a re-run that turns a check green replaces the red result. The gate decides per change which evidence is needed and keeps the failure.
 
-**What if a feature legitimately needs new or updated tests?** It still works: the change goes to the check owner instead of merging on its own evidence. The finding names the test files to read.
+**What if a feature legitimately needs new or updated tests?** The change goes to the check owner (the CODEOWNERS entry for that test path) instead of merging on its own evidence. The finding names the test files, and the owner reviews them against the product change.
 
-**Can the agent fake evidence?** Yes, if your hook writes records somewhere the agent can write. The gate trusts the `producer` label; it doesn't verify signatures. Produce evidence in CI, or sign it, before enforcing.
+**Won't every new file in an Xcode project go to a person?** Adding a file to a classic Xcode project edits `project.pbxproj`, which is protected. Use folder-synchronised groups (Xcode 16+) or keep code in Swift packages to avoid that.
 
-**What does it cost?** Writing checklist items, and keeping end-to-end and property tests fast enough to run on every change.
+**Can the agent fake evidence?** Yes, if your hook writes records somewhere the agent can write. The gate trusts the `producer` label; it doesn't verify signatures.
 
-**What doesn't it guarantee?** That a test is any good. A weak end-to-end test still passes, which is why checks have owners.
+**What does it cost?** Unmeasured. Evaluating a change is cheap; the cost is writing checklist items and keeping end-to-end and property tests fast enough to run on every change.
+
+**Has it run on a real repo?** Not yet. The week is constructed.
 
 ## Limits
 
-- Paths only: it doesn't read diffs, so a checklist trigger is a path glob, not a code pattern.
+- Inputs are trusted: build `ChangeSet` and evidence in CI, not from anything the agent reports.
 - No provenance: evidence records aren't signed or attested.
 - The policy's origin isn't checked: your CI has to load it from the base branch.
-- `**` matching is backtracking; fine for a handful of patterns, not for thousands.
-- The week, the paths and the incidents behind the checklist items are constructed for illustration.
+- Paths only: triggers are path globs, not code patterns. A schema change outside `Sources/Persistence/` won't trigger REL-01, and product code that detects it's under test (launch arguments, `#if DEBUG`) can pass real tests.
+- It doesn't judge test quality. A weak end-to-end test still passes, which is why checks have owners.
+- A pass isn't a security review: keep anything security-sensitive in `sensitivePaths`.
+- `**` matching backtracks; fine for a handful of patterns, not thousands.
+- The week, paths and incidents behind the checklist items are constructed for illustration.
 
 ## Verification status
 
-For the version in this repo: clean `swift build -Xswiftc -warnings-as-errors` and `swift test` (36 tests in 6 suites passed) on macOS with Xcode 27.2 / Swift 6.4.2. The demo app was built with `xcodebuild`, installed and launched on a fresh iPhone 17 Pro Simulator (iOS 27.2) for each tab, confirmed still running, and the screenshots in `Demo/Screenshots/` were captured from that run. CI: (added after the first run)
+For the version in this repo: clean `swift build -Xswiftc -warnings-as-errors` and `swift test` (45 tests in 7 suites passed) on macOS with Xcode 27.2 / Swift 6.4.2. The demo app was built with `xcodebuild`, installed and launched on a fresh iPhone 17 Pro Simulator (iOS 27.2) for each tab, and confirmed still running; `week.png`, `observe.png` and `prompt.png` in `Demo/Screenshots/` come from that run, and `week-cropped.png` is `week.png` cropped above the tab bar. CI: (added after the first run)
 
 ## Sources
 
