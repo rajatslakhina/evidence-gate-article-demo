@@ -84,7 +84,7 @@ Mutation 4: never report sensitive paths
 Unmutated
 􁁛  Test run with 48 tests in 7 suites passed after 1.725 seconds.
 
-## Simulator run: SIM_UDID=<new device> bash Scripts/simulator-screenshots.sh
+## Simulator run: SIM_UDID=<new device> bash Scripts/simulator-screenshots.sh (xcodebuild, bootstatus and ls output trimmed to the lines below)
 Using simulator 11DB6276-CA3D-4995-BD62-323554CD914C
 ** BUILD SUCCEEDED **
 com.rajatlakhina.EvidenceGateDemo: 93568
