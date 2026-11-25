@@ -73,7 +73,9 @@ public struct GatePolicy: Sendable {
     public var checklist: [ChecklistItem]
     public var trustedProducers: Set<EvidenceProducer>
     /// Fix rounds after which a change that is still blocked goes to a person.
-    public var maxFixRounds: Int
+    public var maxFixRounds: Int {
+        didSet { maxFixRounds = max(1, maxFixRounds) }
+    }
     public var mode: GateMode
 
     public init(protectedChecks: [PathPattern],

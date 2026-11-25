@@ -227,7 +227,9 @@ struct EvidenceRuleTests {
     }
 
     @Test func roundLimitHasAFloorOfOne() {
-        let policy = GatePolicy(protectedChecks: [], maxFixRounds: 0)
+        var policy = GatePolicy(protectedChecks: [], maxFixRounds: 0)
+        #expect(policy.maxFixRounds == 1)
+        policy.maxFixRounds = 0
         #expect(policy.maxFixRounds == 1)
     }
 }
