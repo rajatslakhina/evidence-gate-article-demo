@@ -14,6 +14,7 @@ public enum SampleWeek {
                 PathPattern("**/project.pbxproj"),
                 PathPattern("**/*.xcconfig"),
                 PathPattern("**/Package.swift"),
+                PathPattern("**/Package@swift-*.swift"),
                 PathPattern("**/CODEOWNERS"),
                 PathPattern(".github/workflows/**"),
                 PathPattern("Scripts/**"),
