@@ -261,6 +261,8 @@ struct PromptTests {
         let prompt = PromptRenderer.instructions(policy: SampleWeek.policy(),
                                                  plannedPaths: ["Tests/A.swift"])
         #expect(!prompt.contains("- baseline"))
+        #expect(!prompt.contains("Evidence this change needs"))
+        #expect(prompt.contains("This change touches only checks; the check owner reviews it."))
     }
 }
 

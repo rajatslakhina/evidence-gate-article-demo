@@ -22,9 +22,13 @@ public enum PromptRenderer {
                          + policy.sensitivePaths.map(\.pattern).joined(separator: ", ") + ".")
         }
         lines.append("")
-        lines.append("Evidence this change needs, recorded by "
-                     + policy.trustedProducers.map(\.rawValue).sorted().joined(separator: " or ")
-                     + " on the commit you push:")
+        if product.isEmpty {
+            lines.append("This change touches only checks; the check owner reviews it.")
+        } else {
+            lines.append("Evidence this change needs, recorded by "
+                         + policy.trustedProducers.map(\.rawValue).sorted().joined(separator: " or ")
+                         + " on the commit you push:")
+        }
         for r in policy.baseline where !product.isEmpty {
             lines.append("- baseline: \(r.summary)")
         }
