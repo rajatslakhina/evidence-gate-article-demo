@@ -11,78 +11,88 @@ BuildVersion:		26B131
 
 ## $ rm -rf .build && swift build -Xswiftc -warnings-as-errors
 Building for debugging...
-Build complete! (8.04 secs)
+Build complete! (18.18 secs)
 
 ## $ swift test (full Swift Testing output, progress lines removed)
-Test Suite 'All tests' passed at 2026-11-25 12:34:25.608.
-􁁛  Test everyFailingRunOfARequiredKindIsLabelledWithItsRequirement() passed after 0.642 seconds.
-􁁛  Test promptForATestOnlyChangeHasNoEvidenceList() passed after 0.642 seconds.
-􁁛  Test "Property case minimum is inclusive" with 2 test cases passed after 0.643 seconds.
-􁁛  Test reasonKeyedByTheRawPathCounts() passed after 0.643 seconds.
-􁁛  Test editingChecksWhileStillFailingGoesBackToTheAgentFirst() passed after 0.643 seconds.
-􁁛  Test plainProductChangeWithUnitEvidencePasses() passed after 0.643 seconds.
-􁁛  Test trustingAgentReportsIsAPolicyChoice() passed after 0.643 seconds.
-􁁛  Test threeFailedRoundsEscalate() passed after 0.643 seconds.
-􁁛  Test editingTheFlowTestGoesToAPersonEvenWithGreenEvidence() passed after 0.643 seconds.
-􁁛  Test "Each change gets the decision the article describes" with 8 test cases passed after 0.643 seconds.
-􁁛  Test anOldFailureDoesNotCountAgainstTheHeadCommit() passed after 0.643 seconds.
-􁁛  Test deletingATestWithoutAReasonBlocks() passed after 0.643 seconds.
-􁁛  Test promptIsRenderedFromThePolicy() passed after 0.643 seconds.
-􁁛  Test offModeDoesNotRun() passed after 0.643 seconds.
-􁁛  Test weekTotals() passed after 0.643 seconds.
-􁁛  Test deletingAFlakyTestWithAReasonGoesToTheOwner() passed after 0.643 seconds.
-􁁛  Test fiftyPropertyCasesIsNotEnough() passed after 0.643 seconds.
-􁁛  Test observeModeLetsEverythingThroughButRecordsIt() passed after 0.643 seconds.
-􁁛  Test rerunningUntilGreenStillCountsTheFailure() passed after 0.643 seconds.
-􁁛  Test aRedRunNothingRequiredStillBlocks() passed after 0.643 seconds.
-􁁛  Test failingCheckBeforeTheRoundLimitGoesBackToTheAgent() passed after 0.643 seconds.
-􁁛  Test "Files that decide which checks run are protected" with 14 test cases passed after 0.643 seconds.
-􁁛  Test missingEvidenceAfterTheRoundLimitEscalates() passed after 0.643 seconds.
-􁁛  Test schemaChangeNeedsMigrationEvidence() passed after 0.643 seconds.
-􁁛  Test emptyChangeBlocks() passed after 0.643 seconds.
-􁁛  Test deletionWithNoReasonEntryBlocks() passed after 0.643 seconds.
-􁁛  Test caseCannotHideATestEdit() passed after 0.643 seconds.
-􁁛  Test roundLimitHasAFloorOfOne() passed after 0.643 seconds.
-􁁛  Test anUnexplainedDeletionAfterTheRoundLimitEscalates() passed after 0.643 seconds.
-􁁛  Test movingATestOutOfTestsIsATestEdit() passed after 0.643 seconds.
-􁁛  Test "Sensitive paths always go to a person" with 5 test cases passed after 0.643 seconds.
-􁁛  Test staleAndSelfReportedEvidenceDontCount() passed after 0.643 seconds.
-􁁛  Test passingChangesCarryAStamp() passed after 0.643 seconds.
-􁁛  Test "Evidence about another commit never satisfies anything" with 8 test cases passed after 0.643 seconds.
-􁁛  Test "A pass always means every required check has fresh, trusted, green evidence" with 8 test cases passed after 0.643 seconds.
-􁁛  Test "Order of files and evidence never changes the verdict" with 8 test cases passed after 0.643 seconds.
-􁁛  Test "Normalization" with 5 test cases passed after 0.643 seconds.
-􁁛  Test dotDotCannotHideATestEdit() passed after 0.643 seconds.
-􁁛  Test absolutePathBlocks() passed after 0.643 seconds.
-􁁛  Test editingThePolicyFileIsACheckChange() passed after 0.643 seconds.
-􁁛  Test "Globs" with 9 test cases passed after 0.643 seconds.
-􁁛  Test anUnreadableLineBecomesAnInvalidPathInsteadOfVanishing() passed after 0.643 seconds.
-􁁛  Test parsesEveryStatus() passed after 0.642 seconds.
-􁁛  Test proseIsKeptButNotCounted() passed after 0.639 seconds.
-􁁛  Test "Quoted or empty fields fail closed" with 4 test cases passed after 0.642 seconds.
-􁁛  Suite "Prompt" passed after 0.644 seconds.
-􁁛  Suite "Sample week" passed after 0.644 seconds.
-􁁛  Suite "Git name-status" passed after 0.644 seconds.
-􁁛  Suite "Path rules" passed after 0.644 seconds.
-􁁛  Suite "Evidence report" passed after 0.644 seconds.
-􁁛  Suite "Evidence rules" passed after 0.646 seconds.
-􁁛  Test "Observe mode changes what happens, never what the policy decides" with 8 test cases passed after 0.658 seconds.
-􁁛  Test "Adding a test edit to a product change never lets it pass" with 8 test cases passed after 0.732 seconds.
-􁁛  Test "The generator reaches every decision, so the properties above aren't vacuous" passed after 0.956 seconds.
-􁁛  Suite "Gate properties" passed after 0.957 seconds.
-􁁛  Test run with 48 tests in 7 suites passed after 0.957 seconds.
+Test Suite 'All tests' passed at 2026-11-25 13:43:32.354.
+􁁛  Test deletionWithNoReasonEntryBlocks() passed after 1.770 seconds.
+􁁛  Test deletingATestWithoutAReasonBlocks() passed after 1.770 seconds.
+􁁛  Test anUnexplainedDeletionAfterTheRoundLimitEscalates() passed after 1.770 seconds.
+􁁛  Test "Property case minimum is inclusive" with 2 test cases passed after 1.770 seconds.
+􁁛  Test everyFailingRunOfARequiredKindIsLabelledWithItsRequirement() passed after 1.770 seconds.
+􁁛  Test missingEvidenceAfterTheRoundLimitEscalates() passed after 1.770 seconds.
+􁁛  Test plainProductChangeWithUnitEvidencePasses() passed after 1.770 seconds.
+􁁛  Test anOldFailureDoesNotCountAgainstTheHeadCommit() passed after 1.770 seconds.
+􁁛  Test reasonKeyedByTheRawPathCounts() passed after 1.770 seconds.
+􁁛  Test "A trusted red run on the head commit never lets a change pass, whatever else is green" with 8 test cases passed after 1.770 seconds.
+􁁛  Test "Order of files and evidence never changes the verdict" with 8 test cases passed after 1.770 seconds.
+􁁛  Test absolutePathBlocks() passed after 1.770 seconds.
+􁁛  Test "Quoted or empty fields fail closed" with 4 test cases passed after 1.770 seconds.
+􁁛  Test aRedRunNothingRequiredStillBlocks() passed after 1.770 seconds.
+􁁛  Test editingChecksWhileStillFailingGoesBackToTheAgentFirst() passed after 1.770 seconds.
+􁁛  Test "Adding a test edit to a product change never lets it pass" with 8 test cases passed after 1.770 seconds.
+􁁛  Test parsesEveryStatus() passed after 1.770 seconds.
+􁁛  Test "Sensitive paths always go to a person" with 5 test cases passed after 1.788 seconds.
+􁁛  Test "Globs" with 9 test cases passed after 1.823 seconds.
+􁁛  Test dotDotCannotHideATestEdit() passed after 1.824 seconds.
+􁁛  Test editingThePolicyFileIsACheckChange() passed after 1.824 seconds.
+􁁛  Test caseCannotHideATestEdit() passed after 1.824 seconds.
+􁁛  Test "Files that decide which checks run are protected" with 14 test cases passed after 1.824 seconds.
+􁁛  Test rerunningUntilGreenStillCountsTheFailure() passed after 1.824 seconds.
+􁁛  Test trustingAgentReportsIsAPolicyChoice() passed after 1.824 seconds.
+􁁛  Test "Evidence about another commit never satisfies anything" with 8 test cases passed after 1.824 seconds.
+􁁛  Test failingCheckBeforeTheRoundLimitGoesBackToTheAgent() passed after 1.824 seconds.
+􁁛  Test anUnreadableLineBecomesAnInvalidPathInsteadOfVanishing() passed after 1.824 seconds.
+􁁛  Test emptyChangeBlocks() passed after 1.824 seconds.
+􁁛  Test roundLimitHasAFloorOfOne() passed after 1.824 seconds.
+􁁛  Test "Normalization" with 5 test cases passed after 1.815 seconds.
+􁁛  Test movingATestOutOfTestsIsATestEdit() passed after 1.815 seconds.
+􁁛  Test promptForATestOnlyChangeHasNoEvidenceList() passed after 0.694 seconds.
+􁁛  Test promptIsRenderedFromThePolicy() passed after 0.684 seconds.
+􁁛  Test editingTheFlowTestGoesToAPersonEvenWithGreenEvidence() passed after 0.684 seconds.
+􁁛  Test staleAndSelfReportedEvidenceDontCount() passed after 0.682 seconds.
+􁁛  Test passingChangesCarryAStamp() passed after 0.682 seconds.
+􁁛  Test observeModeLetsEverythingThroughButRecordsIt() passed after 0.682 seconds.
+􁁛  Test "Observe mode changes what happens, never what the policy decides" with 8 test cases passed after 1.825 seconds.
+􁁛  Test deletingAFlakyTestWithAReasonGoesToTheOwner() passed after 0.682 seconds.
+􁁛  Test fiftyPropertyCasesIsNotEnough() passed after 0.682 seconds.
+􁁛  Test weekTotals() passed after 0.682 seconds.
+􁁛  Test threeFailedRoundsEscalate() passed after 0.682 seconds.
+􁁛  Test schemaChangeNeedsMigrationEvidence() passed after 0.682 seconds.
+􁁛  Test offModeDoesNotRun() passed after 0.663 seconds.
+􁁛  Suite "Evidence rules" passed after 1.826 seconds.
+􁁛  Suite "Path rules" passed after 1.826 seconds.
+􁁛  Suite "Git name-status" passed after 1.826 seconds.
+􁁛  Test proseIsKeptButNotCounted() passed after 0.001 seconds.
+􁁛  Suite "Prompt" passed after 1.826 seconds.
+􁁛  Suite "Evidence report" passed after 1.826 seconds.
+􁁛  Test "Each change gets the decision the article describes" with 8 test cases passed after 0.692 seconds.
+􁁛  Suite "Sample week" passed after 1.834 seconds.
+􁁛  Test "A pass always means every required check has fresh, trusted, green evidence" with 8 test cases passed after 1.962 seconds.
+􁁛  Test "The generator reaches every decision, so the properties above aren't vacuous" passed after 2.088 seconds.
+􁁛  Suite "Gate properties" passed after 2.089 seconds.
+􁁛  Test run with 49 tests in 7 suites passed after 2.089 seconds.
 
 ## Deliberate mutations (each must make the suite fail)
 Mutation 1: ignore the head-commit check
-􀢄  Test run with 48 tests in 7 suites failed after 0.960 seconds with 1151 issues.
-Mutation 2: let a green run cancel a red one on the same commit
-􀢄  Test run with 48 tests in 7 suites failed after 0.971 seconds with 1 issue.
+􀢄  Test run with 49 tests in 7 suites failed after 2.257 seconds with 1151 issues.
+Mutation 2: let a green run cancel a red one on the same commit (decisions unchanged, because the catch-all for unrequired failures still blocks; only the failure's label changes, so the labelling test catches it)
+􀢄  Test run with 49 tests in 7 suites failed after 2.868 seconds with 1 issue.
+   1 􀢄  Test rerunningUntilGreenStillCountsTheFailure() recorded an issue
 Mutation 3: make the case minimum exclusive (>= minimum becomes > minimum)
-􀢄  Test run with 48 tests in 7 suites failed after 0.779 seconds with 63 issues.
+􀢄  Test run with 49 tests in 7 suites failed after 1.444 seconds with 63 issues.
 Mutation 4: never report sensitive paths
-􀢄  Test run with 48 tests in 7 suites failed after 0.920 seconds with 32 issues.
+􀢄  Test run with 49 tests in 7 suites failed after 0.830 seconds with 32 issues.
+Mutation 5: remove red-run handling entirely (green cancels red, and no catch-all for unrequired failures)
+􀢄  Test run with 49 tests in 7 suites failed after 2.898 seconds with 199 issues.
+􀢄  Test "A pass always means every required check has fresh, trusted, green evidence" with 1 argument seed → 1
+􀢄  Test "A pass always means every required check has fresh, trusted, green evidence" with 1 argument seed → 2
+􀢄  Test "A pass always means every required check has fresh, trusted, green evidence" with 1 argument seed → 3
+􀢄  Test "A pass always means every required check has fresh, trusted, green evidence" with 1 argument seed → 4
+􀢄  Test "A pass always means every required check has fresh, trusted, green evidence" with 1 argument seed → 8
+􀢄  Test "A trusted red run on the head commit never lets a change pass, whatever else is green" with 1 argument seed → 1
 Unmutated
-􁁛  Test run with 48 tests in 7 suites passed after 1.725 seconds.
+􁁛  Test run with 49 tests in 7 suites passed after 2.827 seconds.
 
 ## Simulator run: SIM_UDID=<new device> bash Scripts/simulator-screenshots.sh (xcodebuild, bootstatus and ls output trimmed to the lines below)
 Using simulator 11DB6276-CA3D-4995-BD62-323554CD914C
@@ -90,6 +100,6 @@ Using simulator 11DB6276-CA3D-4995-BD62-323554CD914C
 com.rajatlakhina.EvidenceGateDemo: 93568
 com.rajatlakhina.EvidenceGateDemo: 93719
 com.rajatlakhina.EvidenceGateDemo: 94235
-The 'com.rajatlakhina.EvidenceGateDemo: <pid>' lines are simctl launch PIDs for -tab week, -tab observe and -tab prompt. After each launch the script waits 8 s and checks launchctl for a running PID; under set -e it would have exited if the app had crashed. The script exited 0.
-Device: EvidenceGate-1125 11DB6276-CA3D-4995-BD62-323554CD914C type com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro runtime com.apple.CoreSimulator.SimRuntime.iOS-27-2
+The 'com.rajatlakhina.EvidenceGateDemo: <pid>' lines are simctl launch PIDs for -tab week, -tab observe and -tab prompt. After each launch the script waits 8 s and checks launchctl for a running PID; under set -e it would have exited if the app had crashed. The script exited 0. The library and demo-app code haven't changed since this run; later commits changed only tests and docs.
+Device: EvidenceGate-1125 11DB6276-CA3D-4995-BD62-323554CD914C type com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro runtime com.apple.CoreSimulator.SimRuntime.iOS-27-2 (created for this run, deleted afterwards)
 week-cropped.png = week.png cropped to 1206x2214 (above the floating tab bar), with the 3x3 black capture artefact in the top-left corner painted over.

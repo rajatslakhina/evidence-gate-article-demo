@@ -41,7 +41,9 @@ struct SampleWeekTests {
         #expect(v.triggeredItems == ["REL-01"])
         #expect(v.findings.contains(.missingEvidence(
             item: "REL-01", requirement: EvidenceRequirement(.differential, name: "store-migration"))))
-        #expect(v.findings.contains { if case .missingEvidence(item: "REL-01", _) = $0 { true } else { false } })
+        #expect(v.findings.contains(.missingEvidence(
+            item: "REL-01", requirement: EvidenceRequirement(.property, name: "order-round-trip",
+                                                             minimumCases: SampleWeek.propertyMinimum))))
         #expect(v.findings.count == 2)
     }
 

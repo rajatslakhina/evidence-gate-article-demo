@@ -155,6 +155,21 @@ struct GatePropertyTests {
         }
     }
 
+    @Test("A trusted red run on the head commit never lets a change pass, whatever else is green", arguments: seeds)
+    func redRunNeverPasses(seed: UInt64) {
+        var rng = SplitMix64(seed: seed)
+        for _ in 0..<casesPerSeed {
+            let c = rng.change()
+            let green = rng.evidence(head: c.headCommit)
+            let red = Evidence(kind: green.kind, name: green.name, commit: c.headCommit, passed: false,
+                               cases: green.cases, producer: .ci)
+            let withRed = ChangeSet(id: c.id, title: c.title, headCommit: c.headCommit, files: c.files,
+                                    evidence: c.evidence + [red, green], fixRounds: c.fixRounds,
+                                    deletionReasons: c.deletionReasons)
+            #expect(gate.evaluate(withRed).decision != .pass)
+        }
+    }
+
     @Test("Observe mode changes what happens, never what the policy decides", arguments: seeds)
     func observeMatchesEnforce(seed: UInt64) {
         var rng = SplitMix64(seed: seed)

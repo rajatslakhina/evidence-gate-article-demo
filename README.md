@@ -96,15 +96,16 @@ Library tests run with `swift test`, or open `Package.swift` in Xcode and press 
 
 ## Tests
 
-48 Swift Testing tests in 7 suites, including five property tests. Each property runs 2,000 generated changes (8 fixed seeds × 250, with a deterministic SplitMix64 generator so a failure reproduces). The generator includes deletions with and without reasons, renames, `./` and `../` paths, case variants, sensitive files, untrusted and stale evidence, and property runs with no case count.
+49 Swift Testing tests in 7 suites, including six property tests. Each property runs 2,000 generated changes (8 fixed seeds × 250, with a deterministic SplitMix64 generator so a failure reproduces). The generator includes deletions with and without reasons, renames, `./` and `../` paths, case variants, sensitive files, untrusted and stale evidence, and property runs with no case count.
 
 - The order of files and evidence never changes the verdict.
 - Adding a test edit to a product change never lets it pass, and is always reported.
 - Evidence about another commit never satisfies anything.
 - Observe mode changes what happens, never what the policy decides.
+- A trusted red run on the head commit never lets a change pass, whatever else is green.
 - A pass always means every required check has fresh, trusted, green evidence, no trusted red run, and no protected or sensitive path.
 
-A further test checks the generator reaches pass, block and needs-a-person at least 20 times each, so the properties aren't passing on empty input. I also broke the gate four ways on purpose: ignoring the commit check, letting a green run cancel a red one, making the case minimum exclusive, and never reporting sensitive paths. The suite failed each time; the output is in `docs/verification.txt`.
+A further test checks the generator reaches pass, block and needs-a-person at least 20 times each, so the properties aren't passing on empty input. I also broke the gate five ways on purpose: ignoring the commit check, letting a green run cancel a red one (decisions don't change, because the catch-all for unrequired failures still blocks, so only the labelling test catches it), making the case minimum exclusive, never reporting sensitive paths, and removing red-run handling entirely. The suite failed each time; the output is in `docs/verification.txt`.
 
 ## Questions you might have
 
@@ -138,7 +139,7 @@ A further test checks the generator reaches pass, block and needs-a-person at le
 
 ## Verification status
 
-For the version in this repo: clean `swift build -Xswiftc -warnings-as-errors` and `swift test` (48 tests in 7 suites passed) on macOS with Xcode 27.2 / Swift 6.4.2. The demo app was built with `xcodebuild`, installed and launched on a fresh iPhone 17 Pro Simulator (iOS 27.2) for each tab, and confirmed still running; `week.png`, `observe.png` and `prompt.png` in `Demo/Screenshots/` come from that run, and `week-cropped.png` is `week.png` cropped above the tab bar. CI: (added after the first run)
+For the version in this repo: clean `swift build -Xswiftc -warnings-as-errors` and `swift test` (49 tests in 7 suites passed) on macOS with Xcode 27.2 / Swift 6.4.2. The demo app was built with `xcodebuild`, installed and launched on a fresh iPhone 17 Pro Simulator (iOS 27.2) for each tab, and confirmed still running; `week.png`, `observe.png` and `prompt.png` in `Demo/Screenshots/` come from that run, and `week-cropped.png` is `week.png` cropped above the tab bar. CI: (added after the first run)
 
 ## Sources
 
