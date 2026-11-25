@@ -47,7 +47,7 @@ let prompt = PromptRenderer.instructions(policy: policy,
 
 ## Wiring it into CI
 
-There's no CLI yet. Add the library to a small executable kept in `.gate/` with SwiftPM. The package identity comes from the repo URL, so use that name for `package:`:
+There's no CLI or GitHub Action yet. Add the library with SwiftPM to a small executable kept in `.gate/` (protected, so an agent change can't weaken it for later PRs), built from the base branch with your `GatePolicy` compiled in as Swift, that reads the git diff and the evidence file and exits non-zero unless `verdict.enforced == .pass`. The package identity comes from the repo URL, so use that name for `package:`:
 
 ```swift
 .package(url: "https://github.com/rajatslakhina/evidence-gate-article-demo.git", from: "1.0.0"),
@@ -75,7 +75,7 @@ Read `deletionReasons` from somewhere the agent writes in the open, such as the 
 
 On `pull_request` runs, record `github.event.pull_request.head.sha`, not `GITHUB_SHA`, which is the temporary merge commit.
 
-Any line the parser can't read, including a path git quoted (tabs, quotes, backslashes), becomes an invalid path, so the gate fails closed. `EvidenceReport.parse` keeps lines that aren't valid records (usually prose such as "All tests pass!") in `unparsedLines`, so a reviewer can see them, but they never count. There's no CLI or GitHub Action in this repo: wrap the library in a small executable target, kept under a protected path such as `.gate/` so an agent change can't weaken it for later PRs, built from the base branch with your `GatePolicy` compiled in as Swift, that reads the git diff and the evidence file and exits non-zero unless `verdict.enforced == .pass`.
+Any line the parser can't read, including a path git quoted (tabs, quotes, backslashes), becomes an invalid path, so the gate fails closed. `EvidenceReport.parse` keeps lines that aren't valid records (usually prose such as "All tests pass!") in `unparsedLines`, so a reviewer can see them, but they never count.
 
 ## The constructed week
 
