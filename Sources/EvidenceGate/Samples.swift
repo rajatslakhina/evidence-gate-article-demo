@@ -7,8 +7,7 @@ public enum SampleWeek {
     public static func policy(mode: GateMode = .enforce) -> GatePolicy {
         GatePolicy(
             protectedChecks: [
-                PathPattern("**/Tests/**"),
-                PathPattern("**/UITests/**"),
+                PathPattern("**/*Tests/**"),
                 PathPattern("**/__Snapshots__/**"),
                 PathPattern("**/*.xctestplan"),
                 PathPattern("**/*.xcscheme"),
@@ -18,6 +17,8 @@ public enum SampleWeek {
                 PathPattern("**/CODEOWNERS"),
                 PathPattern(".github/workflows/**"),
                 PathPattern("Scripts/**"),
+                PathPattern("ci_scripts/**"),
+                PathPattern("fastlane/**"),
                 PathPattern(".claude/**"),
                 PathPattern(".gate/**"),
             ],

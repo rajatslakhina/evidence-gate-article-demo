@@ -40,6 +40,8 @@ public enum Finding: Hashable, Sendable {
         switch self {
         case .emptyChange:
             "The change touches no files."
+        case .invalidPath(let p) where p.hasPrefix("/unparsed: "):
+            "Couldn't read this git line, so the gate fails closed: \(p.dropFirst("/unparsed: ".count))"
         case .invalidPath(let p):
             "Path \"\(p)\" is absolute or climbs out of the repository."
         case .modifiesOwnChecks(let paths):

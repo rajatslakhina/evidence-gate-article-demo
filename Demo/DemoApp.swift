@@ -132,9 +132,10 @@ struct PromptView: View {
     var body: some View {
         ScrollView {
             Text(PromptRenderer.instructions(policy: SampleWeek.policy(), plannedPaths: [path]))
-                .font(.system(.footnote, design: .monospaced))
+                .font(.system(.caption, design: .monospaced))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
+                .padding(.bottom, 80)
         }
         .navigationTitle("Rendered prompt")
         .navigationBarTitleDisplayMode(.inline)

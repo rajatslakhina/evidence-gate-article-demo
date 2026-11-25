@@ -77,8 +77,9 @@ public struct EvidenceGate: Sendable {
             let candidates = usable.filter(requirement.accepts)
             let minimum = requirement.minimumCases ?? 0
             let satisfying = candidates.filter { $0.passed && ($0.cases ?? 0) >= minimum }
-            // A failed run on the head commit isn't erased by a later green run of the
-            // same code: rerunning until it passes is how flaky checks get waved through.
+            // A failed run on the head commit isn't erased by a later green run on that
+            // commit: rerunning until it passes is how flaky checks get waved through.
+            // Pushing a new commit to get a clean slate costs a fix round.
             if let failed = candidates.first(where: { !$0.passed }) {
                 reportedFailures.append((failed.kind, failed.name))
                 findings.append(.failingEvidence(item: item, name: failed.name))
@@ -100,18 +101,13 @@ public struct EvidenceGate: Sendable {
         // 5. Decide. Problems the agent can fix go back to the agent, up to the round limit.
         //    A change that edits its own checks or touches a sensitive path never passes
         //    on its own evidence: once everything else is green, it goes to a person.
-        let structural = findings.contains {
-            switch $0 {
-            case .emptyChange, .invalidPath, .deletedCheckWithoutReason: true
-            default: false
-            }
-        }
+        // Bad paths, empty changes and unexplained deletions are `.blocking` too.
         let fixable = findings.contains { $0.severity == .blocking }
         let decision: Decision
-        if (structural || fixable) && change.fixRounds >= policy.maxFixRounds {
+        if fixable && change.fixRounds >= policy.maxFixRounds {
             findings.append(.stillBlockedAfterRounds(change.fixRounds))
             decision = .needsHuman
-        } else if structural || fixable {
+        } else if fixable {
             decision = .block
         } else if findings.contains(where: { $0.severity == .escalation }) {
             decision = .needsHuman

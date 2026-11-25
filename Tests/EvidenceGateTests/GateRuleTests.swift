@@ -183,7 +183,8 @@ struct EvidenceRuleTests {
     @Test("Files that decide which checks run are protected", arguments: [
         "Demo.xcodeproj/xcshareddata/xcschemes/Demo.xcscheme", "Demo.xcodeproj/project.pbxproj",
         "Package.swift", "Scripts/run-ui-tests.sh", ".claude/settings.json", ".claude/hooks/record-evidence.sh",
-        ".github/CODEOWNERS", "Config/Debug.xcconfig", "Packages/Core/Package.swift", "Packages/Core/Tests/CoreTests/A.swift",
+        ".github/CODEOWNERS", "Config/Debug.xcconfig", "ShopTests/CheckoutTests.swift", "ShopUITests/FlowTests.swift",
+        "ci_scripts/ci_post_clone.sh", "fastlane/Fastfile", "Packages/Core/Package.swift", "Packages/Core/Tests/CoreTests/A.swift",
     ])
     func checkControlFilesAreProtected(path: String) {
         let change = ChangeSet(id: "x", title: "", headCommit: head,
@@ -244,7 +245,7 @@ struct PromptTests {
     @Test func promptIsRenderedFromThePolicy() {
         let prompt = PromptRenderer.instructions(policy: SampleWeek.policy(),
                                                  plannedPaths: ["Sources/Checkout/PlaceOrderButton.swift"])
-        #expect(prompt.contains("**/Tests/**, **/UITests/**, **/__Snapshots__/**, **/*.xctestplan, **/*.xcscheme, **/project.pbxproj, **/*.xcconfig, **/Package.swift, **/CODEOWNERS, .github/workflows/**, Scripts/**, .claude/**, .gate/**"))
+        #expect(prompt.contains("**/*Tests/**, **/__Snapshots__/**, **/*.xctestplan, **/*.xcscheme, **/project.pbxproj, **/*.xcconfig, **/Package.swift, **/CODEOWNERS, .github/workflows/**, Scripts/**, ci_scripts/**, fastlane/**, .claude/**, .gate/**"))
         #expect(prompt.contains("These paths always go to a person, however complete the evidence: **/*.entitlements"))
         #expect(prompt.contains("as part of this change"))
         #expect(prompt.contains("You may add a new test there"))
@@ -295,5 +296,6 @@ struct GitNameStatusTests {
         let v = gate.evaluate(change)
         #expect(v.decision == .block)
         #expect(v.findings.first == .invalidPath("/unparsed: X\tweird"))
+        #expect(v.findings.first?.message == "Couldn't read this git line, so the gate fails closed: X\tweird")
     }
 }

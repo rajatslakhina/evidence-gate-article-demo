@@ -14,12 +14,12 @@ Most rules come from the Claude Code team's post, [How the Claude Code team thin
 |------|--------------------|
 | Checks trigger on the diff | A `ChecklistItem` names the paths that trigger it (`Sources/Persistence/**`) and the evidence it needs (a differential migration test, a property test with at least 1,000 cases). Only triggered items apply. |
 | Evidence is about the head commit | Records for any other commit are ignored and listed as notes. Commits are compared exactly, so use full SHAs. |
-| A change can't pass on its own evidence if it edits its checks | Protected paths cover tests, UI tests, snapshots and test plans at any depth, plus what decides which checks run, who records evidence or who owns a check: schemes, `project.pbxproj`, `*.xcconfig`, any `Package.swift`, `CODEOWNERS`, CI workflows, `Scripts/`, `.claude/` and `.gate/` (where you'd keep the policy). Editing them in a product change sends it to a person. Paths are normalized (`Sources/../Tests/x` is caught), renames count at both ends, and matching ignores case, because the default macOS file system does. |
+| A change can't pass on its own evidence if it edits its checks | The sample protects any folder whose name ends in `Tests` (`Tests/`, `UITests/`, Xcode's default `ShopTests/` and `ShopUITests/`), snapshots and test plans, plus what decides which checks run, who records evidence or who owns a check: schemes, `project.pbxproj`, `*.xcconfig`, any `Package.swift`, `CODEOWNERS`, CI workflows, `Scripts/`, Xcode Cloud's `ci_scripts/`, `fastlane/`, `.claude/` and `.gate/` (where you'd keep the policy). Add your own if your checks live elsewhere. Editing them in a product change sends it to a person. Paths are normalized (`Sources/../Tests/x` is caught), renames count at both ends, and matching ignores case, because the default macOS file system does. |
 | No quiet deletions | Deleting a protected file without a written reason goes back to the agent; with one, the check owner reviews it. |
 | A round limit, then a person | A change still blocked after `maxFixRounds` (default 3), for any reason, escalates. Fewer rounds go back to the agent. Count a round each time the gate blocks a new head commit. |
 | Observe before enforce | `.observe` lets everything through and records what `.enforce` would have done. `.off` doesn't run (`decision == .notEvaluated`). |
 | Stamp every commit | Each verdict carries a `verified-by:` trailer. `verified-by: none` is a valid answer. |
-| A red run counts *(my addition)* | Any trusted failure on the head commit blocks, even if a later run of the same code is green or nothing required that check. Builds on the post's rule that Claude "can't skip [flaky tests], add sleeps or retry until they pass". |
+| A red run counts *(my addition)* | Any trusted failure on the head commit blocks, even if a later run on that commit is green or nothing required that check. Pushing a new commit for a clean slate costs a fix round. Builds on the post's rule that Claude "can't skip [flaky tests], add sleeps or retry until they pass". |
 | Sensitive paths always get a person *(my addition)* | `sensitivePaths` (entitlements, `Info.plist`, privacy manifests, `Package.resolved`, `Sources/Auth/**` in the sample) escalate however complete the evidence is. A pass means the evidence is complete, not that the change is safe. |
 
 Evidence records carry a `producer`: `ci`, `hook` or `agent`. The default policy trusts `ci` and `hook`. The label isn't verified, so produce those records somewhere the agent can't write (see Limits).
@@ -49,7 +49,7 @@ let prompt = PromptRenderer.instructions(policy: policy,
 
 Build every input in CI, never from the agent's own report. The gate trusts every field of `ChangeSet`: if the agent supplied the file list, it could leave the test file out.
 
-Run the gate job itself from the base branch (a required workflow or ruleset, or `pull_request_target` that checks out the base branch for the gate) and make its verdict a required check. A normal `pull_request` workflow runs the PR's own copy, so a change that edits CI could rewrite the gate that judges it. Turn on "Require review from Code Owners" so a `needsHuman` verdict reaches the right person.
+Run the gate job itself from the base branch (a required workflow or ruleset, or `pull_request_target` that checks out the base branch for the gate) and make its verdict a required check. A normal `pull_request` workflow runs the PR's own copy, so a change that edits CI could rewrite the gate that judges it. Map `needsHuman` to a failing required check that a person's approval clears (for example, re-run the gate on `pull_request_review`). Turn on "Require review from Code Owners", give every sensitive path a CODEOWNERS entry, and route round-limit escalations on product code to a named lead, since those have no test owner.
 
 ```swift
 // git -c core.quotePath=false diff --name-status -M origin/main...HEAD
@@ -92,7 +92,7 @@ In observe mode all eight merge, and the verdicts record the 3 that enforce woul
 
 Tabs: **Enforce** (the week), **Observe** (the same week in observe mode), **Prompt** (the rendered instructions for a checkout change). Tap a change to see every finding and its commit trailer.
 
-Library tests run with `swift test`, or open `Package.swift` in Xcode and press Cmd+U. The Demo scheme has no test action.
+Library tests run with `swift test`, or open `Package.swift` in Xcode and press Cmd+U. The Demo scheme contains no tests.
 
 ## Tests
 
@@ -129,6 +129,7 @@ A further test checks the generator reaches pass, block and needs-a-person at le
 - Inputs are trusted: build `ChangeSet` and evidence in CI, not from anything the agent reports.
 - No provenance: evidence records aren't signed or attested.
 - The policy's origin isn't checked, and nor is the gate job's: load the policy and run the gate from the base branch as a required check.
+- The protected and sensitive lists are the sample's; check them against where your tests, CI config and secrets actually live.
 - Paths only: triggers are path globs, not code patterns. A schema change outside `Sources/Persistence/` won't trigger REL-01, and product code that detects it's under test (launch arguments, `#if DEBUG`) can pass real tests.
 - It doesn't judge test quality. A weak end-to-end test still passes, which is why checks have owners.
 - A pass isn't a security review: keep anything security-sensitive in `sensitivePaths`.
