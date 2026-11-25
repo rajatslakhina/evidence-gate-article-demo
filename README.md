@@ -47,6 +47,14 @@ let prompt = PromptRenderer.instructions(policy: policy,
 
 ## Wiring it into CI
 
+There's no CLI yet. Add the library to a small executable kept in `.gate/` with SwiftPM. The package identity comes from the repo URL, so use that name for `package:`:
+
+```swift
+.package(url: "https://github.com/rajatslakhina/evidence-gate-article-demo.git", from: "1.0.0"),
+// in the executable target's dependencies:
+.product(name: "EvidenceGate", package: "evidence-gate-article-demo"),
+```
+
 Gate agent-authored PRs, identified by a bot account rather than a label the agent could remove; if agents push under people's accounts, gate every PR. Human PRs otherwise keep your usual review. Post the verdict's findings as the check's output so the agent's next round reads them. Build every input in CI, never from the agent's own report. The gate trusts every field of `ChangeSet`: if the agent supplied the file list, it could leave the test file out.
 
 Run the gate job itself from the base branch: on GitHub, a `workflow_run` job that starts when the test workflow finishes, downloads its evidence file, never builds or runs the PR's code (SwiftPM manifests are code) and posts a commit status for the head SHA. Make its verdict a required check. A normal `pull_request` workflow runs the PR's own copy, so a change that edits CI could rewrite the gate that judges it. Map `needsHuman` to a failing required check that only a person's approval clears. The gate has no approval input, so that base-branch `workflow_run` job has to look up, through the API, an approving review whose `commit_id` is the head SHA from the CODEOWNERS of the flagged paths (or turn on "Dismiss stale pull request approvals"), and only then report success. Don't clear a round-limit escalation that still has a failing run: the lead takes the change over instead. Re-run that job after the review is submitted (for example, a scheduled or manually dispatched base-branch workflow that re-checks PRs waiting on approval), since it doesn't re-run on its own when someone approves. Don't do that re-run from a `pull_request_review` workflow: it runs the PR's own copy of the workflow. A pass skips review only if your branch rules don't also require an approval for those paths. Turn on "Require review from Code Owners", give every sensitive path a CODEOWNERS entry, and route round-limit escalations on product code to a named lead, since those have no test owner.
