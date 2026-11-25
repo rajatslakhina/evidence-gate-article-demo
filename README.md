@@ -127,7 +127,7 @@ A further test checks the generator reaches pass, block and needs-a-person at le
 ## Limits
 
 - Inputs are trusted: build `ChangeSet` and evidence in CI, not from anything the agent reports.
-- No provenance: evidence records aren't signed or attested. In CI the code under test runs in the same job, so write evidence in a separate step or job after the tests, from the test results (for example the `.xcresult` bundle, read with `xcrun xcresulttool`; it has pass/fail per test but no evidence kind or property-case count, so have property tests log their case count, which is harder, not impossible, for test code to tamper with), not from a file the code under test could append to.
+- No provenance: evidence records aren't signed or attested. In CI the code under test runs in the same job, so write evidence in a separate step or job after the tests, from the test results: for example the `.xcresult` bundle, read with `xcrun xcresulttool`, which is harder (not impossible) for test code to tamper with than a file the tests write directly. The bundle has pass/fail per test but no evidence kind or property-case count, so map test names to kinds in that step and have property tests log their case count.
 - The policy's origin isn't checked, and nor is the gate job's: load the policy and run the gate from the base branch as a required check.
 - The protected and sensitive lists are the sample's; check them against where your tests, CI config and secrets actually live (local actions in `.github/actions/`, Makefiles, other CI systems).
 - Paths only: triggers are path globs, not code patterns. A schema change outside `Sources/Persistence/` won't trigger REL-01, and product code that detects it's under test (launch arguments, `#if DEBUG`) can pass real tests.
